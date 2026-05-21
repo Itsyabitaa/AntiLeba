@@ -10,7 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
-import { JwtPayload } from './types/auth-user.type';
+import type { JwtPayload } from './types/auth-user.type';
 
 const BCRYPT_ROUNDS = 12;
 

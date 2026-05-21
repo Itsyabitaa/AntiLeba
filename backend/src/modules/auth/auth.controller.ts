@@ -14,7 +14,7 @@ import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { AuthUser } from './types/auth-user.type';
+import type { AuthUser } from './types/auth-user.type';
 
 @Controller('auth')
 @UseGuards(JwtAuthGuard)
