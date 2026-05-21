@@ -1,0 +1,54 @@
+# ──────── OS / Editors ────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ──────── Logs / Env ────────
+*.log
+.env
+.env.*
+!.env.example
+
+# ──────── Node / NestJS ────────
+node_modules/
+dist/
+coverage/
+.cache/
+.eslintcache
+.nest/
+
+# ──────── Prisma ────────
+backend/prisma/migrations/dev.db
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# ──────── Flutter / Dart ────────
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/.pub-cache/
+mobile/.pub/
+mobile/build/
+mobile/.metadata
+mobile/pubspec.lock
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+mobile/android/.gradle/
+mobile/android/captures/
+mobile/android/gradlew
+mobile/android/gradlew.bat
+mobile/android/local.properties
+mobile/android/**/GeneratedPluginRegistrant.java
+mobile/android/key.properties
+mobile/android/app/release/
+mobile/**/generated_plugin_registrant.*
+
+# ──────── Misc ────────
+tmp/
+*.tmp
