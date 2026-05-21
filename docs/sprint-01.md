@@ -15,11 +15,15 @@ initialize the system architecture.
 
 - [x] Mobile app builds successfully (run `flutter pub get && flutter run`)
 - [x] Backend server runs successfully — verified: all modules initialized, 4 routes mapped
-- [x] Database connection established — Prisma `$connect()` runs on boot; `/api/health` reports DB status
-- [x] Authentication endpoint tested:
-  - `GET /api/auth/me` without token → **401**
-  - `POST /api/auth/register` with `{}` → **400** with field-level validation errors
-  - `POST /api/auth/register` / `POST /api/auth/login` / `GET /api/auth/me` wired end-to-end through bcrypt + Passport JWT
+- [x] Database connection established — Prisma `$connect()` against **Supabase** (eu-west-1, project `ojnpkdizxucepxeubaam`) succeeds on boot; `/api/health` reports `{ "status": "ok", "db": "up" }`
+- [x] Authentication endpoint tested end-to-end against Supabase:
+  - `POST /api/auth/register` → **201** with `{ accessToken, user }` (user persisted in Supabase `users`)
+  - `POST /api/auth/login` → **200** with new JWT
+  - `GET /api/auth/me` with valid token → **200** with current user payload
+  - `GET /api/auth/me` without token → **401** (global JwtAuthGuard)
+  - Duplicate register → **409** `Email already in use`
+  - Wrong password → **401** `Invalid credentials`
+  - Empty register body → **400** with field-level validation errors
 
 ## What was built
 
@@ -50,6 +54,8 @@ initialize the system architecture.
 | Riverpod over Bloc                | Less boilerplate; fits offline-first + background services better |
 | Prisma 6 over Prisma 7            | Prisma 7 moved datasource URLs to `prisma.config.ts` + adapters — ecosystem still maturing |
 | Prisma over TypeORM               | Single source of truth in `schema.prisma`; type-safe queries |
+| Supabase as managed Postgres only | `DATABASE_URL` → transaction pooler (PgBouncer, port 6543, `pgbouncer=true&connection_limit=1`), `DIRECT_URL` → session pooler (port 5432) for migrations |
+| NestJS keeps its own JWT auth     | Sprint 1 already had bcrypt + Passport wired; revisit Supabase Auth only if/when we need OAuth providers, magic links, or RLS-driven mobile access |
 | Global JwtAuthGuard               | Protected by default — explicit `@Public()` is safer than per-controller opt-in |
 | Non-blocking Prisma `$connect()`  | Server should boot and report DB status, not crash, if DB is briefly down |
 | `--dart-define=API_BASE_URL`      | No bundled secrets/env in mobile binary; build-time injection |
