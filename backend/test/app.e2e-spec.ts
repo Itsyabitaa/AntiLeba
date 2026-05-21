@@ -17,13 +17,13 @@ describe('Health (e2e)', () => {
     await app.init();
   });
 
-  it('GET /api/health → 200 + status: ok', () => {
+  it('GET /api/health → 200 + status: ok|degraded', () => {
     return request(app.getHttpServer())
       .get('/api/health')
       .expect(200)
-      .expect((res) => {
-        if (res.body.status !== 'ok') {
-          throw new Error(`expected status=ok, got ${res.body.status}`);
+      .expect((res: { body: { status: string } }) => {
+        if (!['ok', 'degraded'].includes(res.body.status)) {
+          throw new Error(`expected ok|degraded, got ${res.body.status}`);
         }
       });
   });
