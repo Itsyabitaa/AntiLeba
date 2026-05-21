@@ -18,12 +18,12 @@
 
 ## Tech stack
 
-| Layer    | Choice                                                   |
-| -------- | -------------------------------------------------------- |
-| Mobile   | Flutter 3.22+ · Riverpod · GoRouter · Dio                |
-| Backend  | NestJS 11 · TypeScript strict · Passport JWT             |
-| ORM      | Prisma 6 (PostgreSQL provider)                           |
-| Database | PostgreSQL 14+                                           |
+| Layer    | Choice                                                          |
+| -------- | --------------------------------------------------------------- |
+| Mobile   | Flutter 3.22+ · Riverpod · GoRouter · Dio                       |
+| Backend  | NestJS 11 · TypeScript strict · Passport JWT                    |
+| ORM      | Prisma 6 (PostgreSQL provider, transaction pooler + direct URL) |
+| Database | **Supabase** (managed PostgreSQL 15, region: `eu-west-1`)        |
 
 ## Sprint 1 status
 
@@ -57,27 +57,29 @@
 
 ## Prerequisites
 
-| Tool       | Version |
-| ---------- | ------- |
-| Node.js    | ≥ 20    |
-| Flutter    | ≥ 3.22  |
-| PostgreSQL | ≥ 14    |
-| Android Studio / Xcode | for emulators |
+| Tool                   | Version                                |
+| ---------------------- | -------------------------------------- |
+| Node.js                | ≥ 20                                   |
+| Flutter                | ≥ 3.22                                 |
+| Supabase project       | with DB password in hand                |
+| Android Studio / Xcode | for emulators                          |
 
 ## Quick start
 
-### 1. Database
+### 1. Database (Supabase)
 
-```bash
-createdb anti_leba   # or use your existing Postgres database
-```
-
-Update `backend/.env` with your credentials:
+Grab the connection strings from **Supabase → Project Settings → Database**
+and put them in `backend/.env` (use `backend/.env.example` as a template):
 
 ```env
-DATABASE_URL=postgresql://USER:PASS@localhost:5432/anti_leba?schema=public
+DATABASE_URL="postgresql://postgres.<REF>:<PASSWORD>@aws-0-<REGION>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1"
+DIRECT_URL="postgresql://postgres.<REF>:<PASSWORD>@aws-0-<REGION>.pooler.supabase.com:5432/postgres"
 JWT_SECRET=<a long random string>
 ```
+
+> `DATABASE_URL` uses the **transaction pooler** (port 6543) — short-lived
+> connections, safe for Nest workers. `DIRECT_URL` uses the **session pooler**
+> (port 5432) and is what `prisma migrate` runs against.
 
 ### 2. Backend
 
@@ -138,6 +140,11 @@ with `@Public()`.
 - **Prisma 6** (over TypeORM): type-safe, single source of truth in
   `prisma/schema.prisma`. Prisma 7 introduced a `prisma.config.ts` adapter
   model that's still maturing — we'll re-evaluate in a later sprint.
+- **Supabase as the managed Postgres**: we use it strictly as a Postgres host
+  (via Prisma over the transaction pooler). Supabase Auth / Storage are
+  **not** in use — auth lives in NestJS so all business logic stays on the
+  API side. The publishable key + project URL are still stored in `.env` for
+  the mobile app to use (likely from Sprint 6 onward for evidence uploads).
 - **Global `JwtAuthGuard`**: protected-by-default; explicit `@Public()` is
   safer than relying on each controller to remember `@UseGuards`.
 
