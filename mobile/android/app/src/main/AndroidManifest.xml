@@ -23,7 +23,7 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.front" android:required="false" />
 
-    <!-- ───────── Audio (optional, future suspicious activity capture) ───────── -->
+    <!-- ───────── Audio (future suspicious activity capture) ───────── -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- ───────── Storage (offline buffer + evidence) ───────── -->
@@ -70,6 +70,7 @@
             </intent-filter>
         </activity>
 
+        <!-- Don't delete: tells the Flutter tool to use v2 embedding -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
