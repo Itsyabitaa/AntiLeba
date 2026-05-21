@@ -35,7 +35,10 @@ async function bootstrap(): Promise<void> {
   const port = config.get<number>('PORT') ?? 3000;
   await app.listen(port);
 
-  Logger.log(`🚀 Anti-Leba API listening on http://localhost:${port}/api`, 'Bootstrap');
+  Logger.log(
+    `🚀 Anti-Leba API listening on http://localhost:${port}/api`,
+    'Bootstrap',
+  );
 }
 
 void bootstrap();
