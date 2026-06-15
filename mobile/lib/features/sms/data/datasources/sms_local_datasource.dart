@@ -9,8 +9,8 @@ class SmsLocalDataSource {
   static const String pendingBoxName = 'pending_sms_alerts';
   static const String sentBoxName = 'sent_sms_alerts';
 
-  final Future<Box<Map<String, dynamic>>> Function() _openPendingBox;
-  final Future<Box<String>> Function() _openSentBox;
+  final Future<Box<dynamic>> Function() _openPendingBox;
+  final Future<Box<dynamic>> Function() _openSentBox;
 
   Future<void> enqueue(SmsAlert alert) async {
     final box = await _openPendingBox();
@@ -19,9 +19,14 @@ class SmsLocalDataSource {
 
   Future<List<SmsAlert>> getPending() async {
     final box = await _openPendingBox();
-    return box.values
-        .map((raw) => SmsAlert.fromHiveMap(raw))
-        .toList(growable: false);
+    final alerts = <SmsAlert>[];
+    for (final key in box.keys) {
+      final raw = box.get(key);
+      if (raw is Map) {
+        alerts.add(SmsAlert.fromHiveMap(raw));
+      }
+    }
+    return alerts;
   }
 
   Future<int> countPending() async {
@@ -47,7 +52,7 @@ class SmsLocalDataSource {
   Future<void> recordFailedAttempt(String alertId) async {
     final box = await _openPendingBox();
     final raw = box.get(alertId);
-    if (raw == null) return;
+    if (raw is! Map) return;
     final alert = SmsAlert.fromHiveMap(raw);
     await box.put(
       alertId,

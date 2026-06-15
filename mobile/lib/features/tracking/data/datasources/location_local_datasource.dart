@@ -8,7 +8,7 @@ class LocationLocalDataSource {
 
   static const String boxName = 'pending_locations';
 
-  final Future<Box<Map<String, dynamic>>> Function() _openBox;
+  final Future<Box<dynamic>> Function() _openBox;
 
   Future<void> insert(LocationPoint point) async {
     final box = await _openBox();
@@ -17,12 +17,14 @@ class LocationLocalDataSource {
 
   Future<List<LocationPoint>> getUnsynced({int limit = 100}) async {
     final box = await _openBox();
-    final points = box.values
-        .map((raw) => LocationPoint.fromHiveMap(raw))
-        .toList()
-      ..sort(
-        (a, b) => a.recordedAt.compareTo(b.recordedAt),
-      );
+    final points = <LocationPoint>[];
+    for (final key in box.keys) {
+      final raw = box.get(key);
+      if (raw is Map) {
+        points.add(LocationPoint.fromHiveMap(raw));
+      }
+    }
+    points.sort((a, b) => a.recordedAt.compareTo(b.recordedAt));
     if (points.length <= limit) return points;
     return points.sublist(0, limit);
   }
@@ -44,7 +46,7 @@ class LocationLocalDataSource {
     final now = DateTime.now();
     for (final id in clientEventIds) {
       final raw = box.get(id);
-      if (raw == null) continue;
+      if (raw is! Map) continue;
       final point = LocationPoint.fromHiveMap(raw);
       await box.put(
         id,

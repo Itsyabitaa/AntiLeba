@@ -11,24 +11,25 @@ class HiveBootstrap {
   static Future<void> ensureInitialized() async {
     if (_ready) return;
     await Hive.initFlutter();
-    await Hive.openBox<Map<String, dynamic>>(LocationLocalDataSource.boxName);
-    await Hive.openBox<Map<String, dynamic>>(SmsLocalDataSource.pendingBoxName);
-    await Hive.openBox<String>(SmsLocalDataSource.sentBoxName);
+    // Untyped boxes — stored maps deserialize as Map<dynamic, dynamic>.
+    await Hive.openBox<dynamic>(LocationLocalDataSource.boxName);
+    await Hive.openBox<dynamic>(SmsLocalDataSource.pendingBoxName);
+    await Hive.openBox<dynamic>(SmsLocalDataSource.sentBoxName);
     _ready = true;
   }
 
-  static Future<Box<Map<String, dynamic>>> pendingLocationsBox() async {
+  static Future<Box<dynamic>> pendingLocationsBox() async {
     await ensureInitialized();
-    return Hive.box<Map<String, dynamic>>(LocationLocalDataSource.boxName);
+    return Hive.box<dynamic>(LocationLocalDataSource.boxName);
   }
 
-  static Future<Box<Map<String, dynamic>>> pendingSmsBox() async {
+  static Future<Box<dynamic>> pendingSmsBox() async {
     await ensureInitialized();
-    return Hive.box<Map<String, dynamic>>(SmsLocalDataSource.pendingBoxName);
+    return Hive.box<dynamic>(SmsLocalDataSource.pendingBoxName);
   }
 
-  static Future<Box<String>> sentSmsBox() async {
+  static Future<Box<dynamic>> sentSmsBox() async {
     await ensureInitialized();
-    return Hive.box<String>(SmsLocalDataSource.sentBoxName);
+    return Hive.box<dynamic>(SmsLocalDataSource.sentBoxName);
   }
 }
