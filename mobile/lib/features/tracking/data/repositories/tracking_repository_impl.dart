@@ -1,3 +1,4 @@
+import 'package:anti_leba/features/sync/domain/sync_result.dart';
 import 'package:anti_leba/features/tracking/data/datasources/location_local_datasource.dart';
 import 'package:anti_leba/features/tracking/data/datasources/location_remote_datasource.dart';
 import 'package:anti_leba/features/tracking/domain/location_point.dart';
@@ -10,34 +11,38 @@ class TrackingRepositoryImpl implements TrackingRepository {
   final LocationRemoteDataSource _remote;
 
   @override
-  Future<LocationPoint> saveAndSync(LocationPoint point) async {
-    final localId = await _local.insert(point);
-    final stored = point.copyWith(localId: localId);
-
-    try {
-      await _remote.upload(stored);
-      await _local.markSynced(<int>[localId]);
-      return stored;
-    } catch (_) {
-      return stored;
-    }
+  Future<LocationPoint> saveLocally(LocationPoint point) async {
+    await _local.insert(point);
+    return point;
   }
 
   @override
-  Future<int> syncPending() async {
+  Future<SyncResult> syncPending() async {
     final pending = await _local.getUnsynced();
-    if (pending.isEmpty) return 0;
+    if (pending.isEmpty) {
+      return const SyncResult(uploaded: 0, skipped: 0, remaining: 0);
+    }
+
+    final clientEventIds =
+        pending.map((point) => point.clientEventId).toList();
 
     try {
-      await _remote.uploadBatch(pending);
-      final ids = pending
-          .map((point) => point.localId)
-          .whereType<int>()
-          .toList();
-      await _local.markSynced(ids);
-      return ids.length;
+      final response = await _remote.uploadBatch(pending);
+      await _local.markSynced(clientEventIds);
+      final remaining = await _local.countUnsynced();
+      return SyncResult(
+        uploaded: response.inserted,
+        skipped: response.skipped,
+        remaining: remaining,
+      );
     } catch (_) {
-      return 0;
+      await _local.recordFailedAttempt(clientEventIds);
+      final remaining = await _local.countUnsynced();
+      return SyncResult(
+        uploaded: 0,
+        skipped: 0,
+        remaining: remaining,
+      );
     }
   }
 
