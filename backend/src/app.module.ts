@@ -8,6 +8,7 @@ import { UsersModule } from './modules/users/users.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { SimChangesModule } from './modules/sim-changes/sim-changes.module';
+import { PhotosModule } from './modules/photos/photos.module';
 import { HealthController } from './modules/health/health.controller';
 
 @Module({
@@ -23,6 +24,7 @@ import { HealthController } from './modules/health/health.controller';
     DevicesModule,
     LocationsModule,
     SimChangesModule,
+    PhotosModule,
   ],
   controllers: [HealthController],
 })

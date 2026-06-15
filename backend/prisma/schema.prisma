@@ -27,6 +27,13 @@ enum DeviceStatus {
   DISABLED
 }
 
+enum PhotoTrigger {
+  SIM_REPLACEMENT
+  REMOTE_COMMAND
+  UNLOCK_FAILURE
+  MANUAL
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique @db.VarChar(190)
@@ -84,6 +91,7 @@ model Device {
   sessions   Session[]
   locations  Location[]
   simChanges SimChange[]
+  photos     Photo[]
 
   @@index([userId])
   @@index([status])
@@ -127,4 +135,22 @@ model SimChange {
   @@unique([deviceId, clientEventId])
   @@index([deviceId, detectedAt])
   @@map("sim_changes")
+}
+
+model Photo {
+  id            String       @id @default(uuid()) @db.Uuid
+  deviceId      String       @map("device_id") @db.Uuid
+  clientEventId String?      @map("client_event_id") @db.VarChar(36)
+  trigger       PhotoTrigger
+  storagePath   String       @map("storage_path") @db.VarChar(500)
+  mimeType      String       @map("mime_type") @db.VarChar(64)
+  fileSize      Int          @map("file_size")
+  capturedAt    DateTime     @map("captured_at") @db.Timestamptz()
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, clientEventId])
+  @@index([deviceId, capturedAt])
+  @@map("photos")
 }
