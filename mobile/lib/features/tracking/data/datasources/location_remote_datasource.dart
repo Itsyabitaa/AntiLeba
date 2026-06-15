@@ -3,6 +3,25 @@ import 'package:dio/dio.dart';
 import 'package:anti_leba/core/errors/failures.dart';
 import 'package:anti_leba/features/tracking/domain/location_point.dart';
 
+class BatchUploadResponse {
+  BatchUploadResponse({
+    required this.inserted,
+    required this.skipped,
+  });
+
+  factory BatchUploadResponse.fromJson(Map<String, dynamic> json) {
+    return BatchUploadResponse(
+      inserted: (json['inserted'] as num?)?.toInt() ??
+          (json['count'] as num?)?.toInt() ??
+          0,
+      skipped: (json['skipped'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  final int inserted;
+  final int skipped;
+}
+
 class LocationRemoteDataSource {
   LocationRemoteDataSource(this._dio);
 
@@ -16,15 +35,18 @@ class LocationRemoteDataSource {
     }
   }
 
-  Future<void> uploadBatch(List<LocationPoint> points) async {
-    if (points.isEmpty) return;
+  Future<BatchUploadResponse> uploadBatch(List<LocationPoint> points) async {
+    if (points.isEmpty) {
+      return BatchUploadResponse(inserted: 0, skipped: 0);
+    }
     try {
-      await _dio.post<void>(
+      final response = await _dio.post<Map<String, dynamic>>(
         '/locations/batch',
         data: <String, dynamic>{
           'locations': points.map((p) => p.toApiJson()).toList(),
         },
       );
+      return BatchUploadResponse.fromJson(response.data!);
     } on DioException catch (error) {
       throw _mapError(error);
     }
