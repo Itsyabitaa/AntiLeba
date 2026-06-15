@@ -16,6 +16,10 @@ export class CreateLocationDto {
   @IsUUID('4')
   deviceId!: string;
 
+  @IsOptional()
+  @IsUUID('4')
+  clientEventId?: string;
+
   @IsNumber()
   @Min(-90)
   @Max(90)
@@ -57,4 +61,10 @@ export class BatchCreateLocationsDto {
   @ValidateNested({ each: true })
   @Type(() => CreateLocationDto)
   locations!: CreateLocationDto[];
+}
+
+export interface BatchUploadResult {
+  inserted: number;
+  skipped: number;
+  locations: import('@prisma/client').Location[];
 }

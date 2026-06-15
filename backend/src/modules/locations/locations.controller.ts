@@ -14,6 +14,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import {
   BatchCreateLocationsDto,
+  BatchUploadResult,
   CreateLocationDto,
 } from './dto/create-location.dto';
 import { LocationsService } from './locations.service';
@@ -34,7 +35,7 @@ export class LocationsController {
   createBatch(
     @CurrentUser() user: AuthUser,
     @Body() dto: BatchCreateLocationsDto,
-  ): Promise<{ count: number; locations: Location[] }> {
+  ): Promise<BatchUploadResult> {
     return this.locations.createBatch(user.id, dto.locations);
   }
 

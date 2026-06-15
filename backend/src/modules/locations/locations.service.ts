@@ -3,7 +3,10 @@ import { Location, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { DevicesService } from '../devices/devices.service';
-import { CreateLocationDto } from './dto/create-location.dto';
+import {
+  BatchUploadResult,
+  CreateLocationDto,
+} from './dto/create-location.dto';
 
 @Injectable()
 export class LocationsService {
@@ -14,6 +17,18 @@ export class LocationsService {
 
   async create(userId: string, dto: CreateLocationDto): Promise<Location> {
     await this.devices.findByIdForUser(dto.deviceId, userId);
+
+    if (dto.clientEventId) {
+      const existing = await this.prisma.location.findUnique({
+        where: {
+          deviceId_clientEventId: {
+            deviceId: dto.deviceId,
+            clientEventId: dto.clientEventId,
+          },
+        },
+      });
+      if (existing) return existing;
+    }
 
     const location = await this.prisma.location.create({
       data: this.toCreateInput(dto),
@@ -26,23 +41,31 @@ export class LocationsService {
   async createBatch(
     userId: string,
     dtos: CreateLocationDto[],
-  ): Promise<{ count: number; locations: Location[] }> {
+  ): Promise<BatchUploadResult> {
     const deviceIds = [...new Set(dtos.map((dto) => dto.deviceId))];
     for (const deviceId of deviceIds) {
       await this.devices.findByIdForUser(deviceId, userId);
     }
 
-    const locations = await this.prisma.$transaction(
-      dtos.map((dto) =>
-        this.prisma.location.create({ data: this.toCreateInput(dto) }),
-      ),
-    );
+    const locations: Location[] = [];
+    let inserted = 0;
+    let skipped = 0;
+
+    for (const dto of dtos) {
+      const result = await this.upsertLocation(dto);
+      locations.push(result.location);
+      if (result.skipped) {
+        skipped += 1;
+      } else {
+        inserted += 1;
+      }
+    }
 
     for (const deviceId of deviceIds) {
       await this.devices.touchLastSeen(deviceId, userId);
     }
 
-    return { count: locations.length, locations };
+    return { inserted, skipped, locations };
   }
 
   async findByDevice(
@@ -59,9 +82,54 @@ export class LocationsService {
     });
   }
 
+  private async upsertLocation(
+    dto: CreateLocationDto,
+  ): Promise<{ location: Location; skipped: boolean }> {
+    if (dto.clientEventId) {
+      const existing = await this.prisma.location.findUnique({
+        where: {
+          deviceId_clientEventId: {
+            deviceId: dto.deviceId,
+            clientEventId: dto.clientEventId,
+          },
+        },
+      });
+      if (existing) {
+        return { location: existing, skipped: true };
+      }
+    }
+
+    try {
+      const location = await this.prisma.location.create({
+        data: this.toCreateInput(dto),
+      });
+      return { location, skipped: false };
+    } catch (error) {
+      if (
+        dto.clientEventId &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existing = await this.prisma.location.findUnique({
+          where: {
+            deviceId_clientEventId: {
+              deviceId: dto.deviceId,
+              clientEventId: dto.clientEventId,
+            },
+          },
+        });
+        if (existing) {
+          return { location: existing, skipped: true };
+        }
+      }
+      throw error;
+    }
+  }
+
   private toCreateInput(dto: CreateLocationDto): Prisma.LocationCreateInput {
     return {
       device: { connect: { id: dto.deviceId } },
+      clientEventId: dto.clientEventId,
       latitude: dto.latitude,
       longitude: dto.longitude,
       accuracy: dto.accuracy,
