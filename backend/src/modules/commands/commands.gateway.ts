@@ -14,6 +14,7 @@ import { CommandsService } from './commands.service';
 import { AckCommandDto } from './dto/ack-command.dto';
 import type { WsAuthContext } from './ws-auth.service';
 import { WsAuthService } from './ws-auth.service';
+import { DevicesService } from '../devices/devices.service';
 
 interface DeviceSocketData {
   auth?: WsAuthContext;
