@@ -22,4 +22,11 @@ class AppEnv {
     'VERBOSE_LOGS',
     defaultValue: true,
   );
+
+  /// Emergency SMS recipient — set at build/run time:
+  ///   --dart-define=EMERGENCY_SMS_NUMBER=+251911234567
+  static const String emergencySmsNumber = String.fromEnvironment(
+    'EMERGENCY_SMS_NUMBER',
+    defaultValue: '',
+  );
 }

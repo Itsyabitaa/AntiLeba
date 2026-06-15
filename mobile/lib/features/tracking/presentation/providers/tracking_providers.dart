@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:anti_leba/core/network/dio_client.dart';
 import 'package:anti_leba/core/storage/hive_bootstrap.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
+import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/sync/data/location_sync_engine.dart';
 import 'package:anti_leba/features/sync/domain/sync_result.dart';
 import 'package:anti_leba/features/tracking/data/datasources/location_local_datasource.dart';
@@ -100,6 +101,7 @@ class TrackingController extends StateNotifier<TrackingState> {
   LocationSyncEngine get _syncEngine => _ref.read(locationSyncEngineProvider);
 
   Future<void> start(String deviceId) async {
+    await _ref.read(smsControllerProvider.notifier).start();
     _syncEngine.start(onResult: _onSyncResult);
 
     final started = await _tracking.start(
@@ -128,6 +130,7 @@ class TrackingController extends StateNotifier<TrackingState> {
   Future<void> stop() async {
     await _tracking.stop();
     await _syncEngine.stop();
+    await _ref.read(smsControllerProvider.notifier).stop();
     state = const TrackingState();
   }
 
@@ -150,6 +153,7 @@ class TrackingController extends StateNotifier<TrackingState> {
       isRunning: true,
       clearError: true,
     );
+    unawaited(_ref.read(smsControllerProvider.notifier).onLocationCollected(point));
     unawaited(_syncEngine.syncWithRetry());
   }
 
@@ -159,6 +163,13 @@ class TrackingController extends StateNotifier<TrackingState> {
       unsyncedCount: result.remaining,
       lastSyncedAt: result.hadWork ? DateTime.now() : state.lastSyncedAt,
     );
+    if (result.remaining > 0 && !result.hadWork) {
+      unawaited(
+        _ref
+            .read(smsControllerProvider.notifier)
+            .onSyncFailedOffline(state.lastLocation),
+      );
+    }
   }
 }
 

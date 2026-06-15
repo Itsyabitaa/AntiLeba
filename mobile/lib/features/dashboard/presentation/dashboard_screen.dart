@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:anti_leba/core/router/app_router.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 import 'package:anti_leba/features/devices/domain/device.dart';
+import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/tracking/presentation/providers/tracking_providers.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -23,6 +24,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final session = ref.watch(authControllerProvider).valueOrNull;
     final deviceAsync = ref.watch(enrolledDeviceProvider);
     final tracking = ref.watch(trackingControllerProvider);
+    final sms = ref.watch(smsControllerProvider);
 
     ref.listen<AsyncValue<Device?>>(enrolledDeviceProvider, (previous, next) {
       next.whenData((Device? device) async {
@@ -97,9 +99,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ],
           const SizedBox(height: 12),
-          const _StatusCard(
+          _StatusCard(
+            title: 'SMS fallback',
+            subtitle: _smsSubtitle(sms),
+            icon: sms.isSending ? Icons.sms : Icons.sms_outlined,
+            trailing: sms.pendingCount > 0 && !sms.isSending
+                ? TextButton(
+                    onPressed: () =>
+                        ref.read(smsControllerProvider.notifier).retryNow(),
+                    child: const Text('Retry'),
+                  )
+                : sms.isSending
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
+          ),
+          if (sms.error != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              sms.error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          const SizedBox(height: 12),
+          _StatusCard(
             title: 'SIM watch',
-            subtitle: 'Monitoring SIM changes',
+            subtitle: sms.simSnapshot != null
+                ? '${sms.simSnapshot!.displayLabel}'
+                    '${sms.simChanged ? ' · change detected' : ''}'
+                : 'Reading SIM status…',
             icon: Icons.sim_card_outlined,
           ),
           const SizedBox(height: 12),
@@ -138,6 +169,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         : 'unknown';
     return 'Active · ${last.latitude.toStringAsFixed(5)}, '
         '${last.longitude.toStringAsFixed(5)} · $when';
+  }
+
+  String _smsSubtitle(SmsState sms) {
+    if (!sms.emergencyNumberConfigured) {
+      return 'Set EMERGENCY_SMS_NUMBER dart-define';
+    }
+    if (sms.isSending) return 'Sending emergency alert…';
+    final parts = <String>['${sms.pendingCount} pending SMS'];
+    if (sms.lastSentAt != null) {
+      parts.add(
+        'last sent ${DateFormat.Hm().format(sms.lastSentAt!.toLocal())}',
+      );
+    }
+    return parts.join(' · ');
   }
 }
 
