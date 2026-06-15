@@ -54,7 +54,7 @@ export class CommandsService {
           clientEventId: dto.clientEventId,
           type: dto.type,
           status: CommandStatus.PENDING,
-          payload: dto.payload ?? undefined,
+          payload: (dto.payload as object | undefined) ?? undefined,
         },
       });
 

@@ -8,6 +8,7 @@
 ```
 .
 ├── backend/    # NestJS API + Prisma ORM
+├── dashboard/  # React web monitoring dashboard (Vite)
 ├── mobile/     # Flutter mobile client (Riverpod + GoRouter + Dio)
 ├── database/   # init.sql + DB notes
 ├── docs/       # (future) architecture diagrams, sprint notes
@@ -21,6 +22,7 @@
 | Layer    | Choice                                                          |
 | -------- | --------------------------------------------------------------- |
 | Mobile   | Flutter 3.22+ · Riverpod · GoRouter · Dio                       |
+| Dashboard | React 19 · Vite · Leaflet                                      |
 | Backend  | NestJS 11 · TypeScript strict · Passport JWT                    |
 | ORM      | Prisma 6 (PostgreSQL provider, transaction pooler + direct URL) |
 | Database | **Supabase** (managed PostgreSQL 15, region: `eu-west-1`)        |
@@ -119,6 +121,17 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000   # Android emulator
 > Real device? Use your machine's LAN IP (`ipconfig` / `ifconfig`):
 > `--dart-define=API_BASE_URL=http://192.168.1.50:3000`
 
+### 4. Web dashboard
+
+```bash
+cd dashboard
+npm install
+cp .env.example .env
+npm run dev    # http://localhost:5173
+```
+
+Sign in with the same owner account used on mobile. Add `http://localhost:5173` to backend `CORS_ORIGINS`.
+
 ## API surface (Sprint 1)
 
 | Method | Path                  | Auth     | Description                  |
@@ -142,6 +155,11 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000   # Android emulator
 | GET    | `/api/commands?deviceId=` | Bearer   | List command history           |
 | POST   | `/api/commands/ack`       | Bearer   | Acknowledge command execution  |
 | WS     | `/commands` (Socket.IO)   | JWT handshake | Real-time command delivery |
+| GET    | `/api/dashboard/overview` | Bearer   | Devices + stats + last locations |
+| GET    | `/api/dashboard/stats`    | Bearer   | Aggregate statistics           |
+| GET    | `/api/dashboard/alerts`   | Bearer   | Unified alert feed             |
+| PATCH  | `/api/devices/:id/status` | Bearer   | Update device status           |
+| GET    | `/api/photos/:id/file`    | Bearer   | Download evidence image        |
 
 All routes are protected by a global `JwtAuthGuard`; public routes opt out
 with `@Public()`.
@@ -175,4 +193,5 @@ with `@Public()`.
 | 6      | **(done)** SIM change detection + theft mode + event logging    |
 | 8      | **(done)** Camera evidence capture + photo upload + offline queue |
 | 9      | **(done)** Remote command system (WebSocket + command executor)    |
-| 10+    | Admin dashboard, hardening                                          |
+| 10     | **(done)** Web monitoring dashboard (React + dashboard APIs)       |
+| 11+    | Hardening, notifications, production deploy                        |

@@ -1,5 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Photo, PhotoTrigger } from '@prisma/client';
+import { createReadStream, existsSync } from 'fs';
+import { join } from 'path';
+import type { ReadStream } from 'fs';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { DevicesService } from '../devices/devices.service';
@@ -74,6 +77,31 @@ export class PhotosService {
       orderBy: { capturedAt: 'desc' },
       take,
     });
+  }
+
+  async findByIdForUser(userId: string, photoId: string): Promise<Photo> {
+    const photo = await this.prisma.photo.findFirst({
+      where: { id: photoId, device: { userId } },
+    });
+    if (!photo) {
+      throw new NotFoundException('Photo not found');
+    }
+    return photo;
+  }
+
+  async openPhotoStream(
+    userId: string,
+    photoId: string,
+  ): Promise<{ stream: ReadStream; mimeType: string }> {
+    const photo = await this.findByIdForUser(userId, photoId);
+    const absolutePath = join(process.cwd(), 'uploads', photo.storagePath);
+    if (!existsSync(absolutePath)) {
+      throw new NotFoundException('Photo file missing on disk');
+    }
+    return {
+      stream: createReadStream(absolutePath),
+      mimeType: photo.mimeType,
+    };
   }
 
   private extensionForMime(mime: string): string {

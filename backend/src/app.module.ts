@@ -10,6 +10,7 @@ import { LocationsModule } from './modules/locations/locations.module';
 import { SimChangesModule } from './modules/sim-changes/sim-changes.module';
 import { PhotosModule } from './modules/photos/photos.module';
 import { CommandsModule } from './modules/commands/commands.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { HealthController } from './modules/health/health.controller';
 
 @Module({
@@ -27,6 +28,7 @@ import { HealthController } from './modules/health/health.controller';
     SimChangesModule,
     PhotosModule,
     CommandsModule,
+    DashboardModule,
   ],
   controllers: [HealthController],
 })

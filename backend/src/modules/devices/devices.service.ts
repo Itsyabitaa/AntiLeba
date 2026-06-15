@@ -97,4 +97,16 @@ export class DevicesService {
       throw new ForbiddenException('You do not own this device');
     }
   }
+
+  async updateStatus(
+    id: string,
+    userId: string,
+    status: DeviceStatus,
+  ): Promise<Device> {
+    const device = await this.findByIdForUser(id, userId);
+    return this.prisma.device.update({
+      where: { id: device.id },
+      data: { status, lastSeenAt: new Date() },
+    });
+  }
 }

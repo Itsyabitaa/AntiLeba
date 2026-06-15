@@ -3,10 +3,12 @@ import {
   Controller,
   DefaultValuePipe,
   Get,
+  Param,
   ParseIntPipe,
   ParseUUIDPipe,
   Post,
   Query,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -45,5 +47,14 @@ export class PhotosController {
     @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
   ): Promise<Photo[]> {
     return this.photos.findByDevice(user.id, deviceId, limit);
+  }
+
+  @Get(':id/file')
+  async file(
+    @CurrentUser() user: AuthUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<StreamableFile> {
+    const { stream, mimeType } = await this.photos.openPhotoStream(user.id, id);
+    return new StreamableFile(stream, { type: mimeType });
   }
 }
