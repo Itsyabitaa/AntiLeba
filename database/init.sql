@@ -93,6 +93,25 @@ CREATE INDEX IF NOT EXISTS idx_locations_device_recorded
 CREATE UNIQUE INDEX IF NOT EXISTS idx_locations_device_client_event
     ON locations (device_id, client_event_id);
 
+-- sim_changes (Sprint 6) ---------------------------------------------------
+CREATE TABLE IF NOT EXISTS sim_changes (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    device_id         UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    client_event_id   VARCHAR(36),
+    previous_serial   VARCHAR(40),
+    new_serial        VARCHAR(40),
+    previous_operator VARCHAR(60),
+    new_operator      VARCHAR(60),
+    detected_at       TIMESTAMPTZ NOT NULL,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sim_changes_device_client_event
+    ON sim_changes (device_id, client_event_id);
+
+CREATE INDEX IF NOT EXISTS idx_sim_changes_device_detected
+    ON sim_changes (device_id, detected_at);
+
 -- updated_at trigger -------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$

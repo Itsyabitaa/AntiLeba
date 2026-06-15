@@ -20,4 +20,13 @@ class SimStatusService {
       return SimSnapshot.unknown();
     }
   }
+
+  /// Native SIM card state broadcasts (Android `SIM_STATE_CHANGED`).
+  Stream<void> watchChanges() {
+    return _eventChannel.receiveBroadcastStream().map((_) {});
+  }
+
+  static const EventChannel _eventChannel = EventChannel(
+    'com.antileba.anti_leba/device_telemetry/sim_events',
+  );
 }

@@ -9,6 +9,8 @@ class Device {
     this.manufacturer,
     this.model,
     this.osVersion,
+    this.simSerial,
+    this.simOperator,
     this.lastSeenAt,
   });
 
@@ -21,6 +23,8 @@ class Device {
       manufacturer: json['manufacturer'] as String?,
       model: json['model'] as String?,
       osVersion: json['osVersion'] as String?,
+      simSerial: json['simSerial'] as String?,
+      simOperator: json['simOperator'] as String?,
       lastSeenAt: json['lastSeenAt'] != null
           ? DateTime.tryParse(json['lastSeenAt'] as String)
           : null,
@@ -34,6 +38,8 @@ class Device {
   final String? manufacturer;
   final String? model;
   final String? osVersion;
+  final String? simSerial;
+  final String? simOperator;
   final DateTime? lastSeenAt;
 
   static DeviceStatus _parseStatus(String? raw) {

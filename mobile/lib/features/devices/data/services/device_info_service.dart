@@ -5,6 +5,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:anti_leba/features/sms/data/services/sim_status_service.dart';
+
 class DeviceRegistrationPayload {
   const DeviceRegistrationPayload({
     required this.deviceUid,
@@ -13,6 +15,8 @@ class DeviceRegistrationPayload {
     this.model,
     this.osVersion,
     this.appVersion,
+    this.simSerial,
+    this.simOperator,
   });
 
   final String deviceUid;
@@ -21,6 +25,8 @@ class DeviceRegistrationPayload {
   final String? model;
   final String? osVersion;
   final String? appVersion;
+  final String? simSerial;
+  final String? simOperator;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
         'deviceUid': deviceUid,
@@ -29,18 +35,23 @@ class DeviceRegistrationPayload {
         if (model != null) 'model': model,
         if (osVersion != null) 'osVersion': osVersion,
         if (appVersion != null) 'appVersion': appVersion,
+        if (simSerial != null) 'simSerial': simSerial,
+        if (simOperator != null) 'simOperator': simOperator,
       };
 }
 
 class DeviceInfoService {
-  DeviceInfoService(this._storage);
+  DeviceInfoService(this._storage, {SimStatusService? simStatus})
+      : _simStatus = simStatus ?? SimStatusService();
 
   static const String _fallbackUidKey = 'device_uid_fallback';
   final FlutterSecureStorage _storage;
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  final SimStatusService _simStatus;
 
   Future<DeviceRegistrationPayload> collect() async {
     final packageInfo = await PackageInfo.fromPlatform();
+    final sim = Platform.isAndroid ? await _simStatus.readSnapshot() : null;
 
     if (Platform.isAndroid) {
       final android = await _deviceInfo.androidInfo;
@@ -56,6 +67,8 @@ class DeviceInfoService {
         model: model,
         osVersion: 'Android ${android.version.release}',
         appVersion: packageInfo.version,
+        simSerial: sim?.serial,
+        simOperator: sim?.operator,
       );
     }
 

@@ -134,6 +134,8 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000   # Android emulator
 | POST   | `/api/locations`          | Bearer   | Store GPS fix                  |
 | POST   | `/api/locations/batch`    | Bearer   | Batch upload (offline sync)    |
 | GET    | `/api/locations?deviceId=` | Bearer  | List recent fixes              |
+| POST   | `/api/sim-changes`        | Bearer   | Report SIM replacement         |
+| GET    | `/api/sim-changes?deviceId=` | Bearer | List SIM change events         |
 
 All routes are protected by a global `JwtAuthGuard`; public routes opt out
 with `@Public()`.
@@ -164,5 +166,5 @@ with `@Public()`.
 | 3      | **(done)** GPS tracking + foreground service + offline buffer |
 | 4      | **(done)** Hive offline queue + sync engine + batch dedup     |
 | 5      | **(done)** SMS fallback + SIM watch + emergency alert module    |
-| 6      | Camera capture (evidence)                                     |
-| 7+     | Remote commands, alerts, admin dashboard, hardening           |
+| 6      | **(done)** SIM change detection + theft mode + event logging    |
+| 7+     | Camera evidence, remote commands, admin dashboard, hardening    |

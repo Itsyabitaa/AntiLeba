@@ -18,5 +18,21 @@ class SmsMessageFormatter {
     ].join('\n');
   }
 
+  String formatTheft(SmsAlert alert, {required String previousSim}) {
+    final timestamp = DateFormat('yyyy-MM-dd HH:mm:ss')
+        .format(alert.timestamp.toUtc())
+        .padRight(19);
+    return [
+      'ANTI-LEBA THEFT ALERT',
+      'SIM REPLACED',
+      'Was:$previousSim',
+      'Now:${alert.simStatus}',
+      'Lat:${_coord(alert.latitude)} Lon:${_coord(alert.longitude)}',
+      'Batt:${alert.batteryPercent}%',
+      'Time:$timestamp UTC',
+      'ID:${alert.alertId.substring(0, 8)}',
+    ].join('\n');
+  }
+
   String _coord(double value) => value.toStringAsFixed(5);
 }

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:anti_leba/core/router/app_router.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 import 'package:anti_leba/features/devices/domain/device.dart';
+import 'package:anti_leba/features/sim/presentation/providers/sim_providers.dart';
 import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/tracking/presentation/providers/tracking_providers.dart';
 
@@ -25,6 +26,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final deviceAsync = ref.watch(enrolledDeviceProvider);
     final tracking = ref.watch(trackingControllerProvider);
     final sms = ref.watch(smsControllerProvider);
+    final sim = ref.watch(simControllerProvider);
 
     ref.listen<AsyncValue<Device?>>(enrolledDeviceProvider, (previous, next) {
       next.whenData((Device? device) async {
@@ -80,6 +82,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               icon: Icons.smartphone,
             ),
           ),
+          if (sim.theftModeActive) ...<Widget>[
+            Card(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: ListTile(
+                leading: Icon(
+                  Icons.warning_amber_rounded,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+                title: Text(
+                  'Theft mode active',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  sim.lastChangeAt != null
+                      ? 'SIM change detected · ${DateFormat.Hm().format(sim.lastChangeAt!.toLocal())}'
+                          '${sim.lastAlertSentAt != null ? ' · alert sent' : ''}'
+                      : 'SIM replacement detected — device marked LOST on server',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           const SizedBox(height: 12),
           _StatusCard(
             title: 'Tracking',
@@ -127,12 +157,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 12),
           _StatusCard(
             title: 'SIM watch',
-            subtitle: sms.simSnapshot != null
-                ? '${sms.simSnapshot!.displayLabel}'
-                    '${sms.simChanged ? ' · change detected' : ''}'
-                : 'Reading SIM status…',
-            icon: Icons.sim_card_outlined,
+            subtitle: _simSubtitle(sim),
+            icon: sim.theftModeActive
+                ? Icons.sim_card_alert
+                : Icons.sim_card_outlined,
           ),
+          if (sim.error != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              sim.error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
           const SizedBox(height: 12),
           _StatusCard(
             title: 'Offline buffer',
@@ -181,6 +217,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       parts.add(
         'last sent ${DateFormat.Hm().format(sms.lastSentAt!.toLocal())}',
       );
+    }
+    return parts.join(' · ');
+  }
+
+  String _simSubtitle(SimState sim) {
+    if (!sim.isMonitoring) return 'Monitoring idle';
+    final snapshot = sim.simSnapshot;
+    if (snapshot == null) return 'Reading SIM status…';
+    final parts = <String>[snapshot.displayLabel];
+    if (sim.registeredSerial != null && sim.registeredSerial != 'UNKNOWN') {
+      final serial = sim.registeredSerial!;
+      final prefix = serial.length > 4 ? serial.substring(0, 4) : serial;
+      parts.add('baseline $prefix…');
+    }
+    if (sim.theftModeActive) {
+      parts.add('THEFT MODE');
+    } else {
+      parts.add('monitoring active');
     }
     return parts.join(' · ');
   }

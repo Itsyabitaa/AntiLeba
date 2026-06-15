@@ -6,6 +6,7 @@ import 'package:anti_leba/core/network/dio_client.dart';
 import 'package:anti_leba/core/storage/hive_bootstrap.dart';
 import 'package:anti_leba/features/auth/domain/auth_session.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
+import 'package:anti_leba/features/sim/presentation/providers/sim_providers.dart';
 import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/sync/data/location_sync_engine.dart';
 import 'package:anti_leba/features/sync/domain/sync_result.dart';
@@ -109,6 +110,13 @@ class TrackingController extends StateNotifier<TrackingState> {
   Future<void> start(String deviceId) async {
     await _repository.purgeStaleEntries(deviceId);
     await _ref.read(smsControllerProvider.notifier).start();
+
+    final device = _ref.read(enrolledDeviceProvider).valueOrNull;
+    await _ref.read(simControllerProvider.notifier).start(
+          deviceId: deviceId,
+          device: device,
+        );
+
     _syncEngine.start(onResult: _onSyncResult);
 
     final started = await _tracking.start(
@@ -142,6 +150,7 @@ class TrackingController extends StateNotifier<TrackingState> {
     }
     await _tracking.stop();
     await _syncEngine.stop();
+    await _ref.read(simControllerProvider.notifier).stop();
     await _ref.read(smsControllerProvider.notifier).stop();
     state = const TrackingState();
   }
@@ -166,6 +175,7 @@ class TrackingController extends StateNotifier<TrackingState> {
       clearError: true,
     );
     unawaited(_ref.read(smsControllerProvider.notifier).onLocationCollected(point));
+    _ref.read(simControllerProvider.notifier).updateLastLocation(point);
     unawaited(_syncEngine.syncWithRetry());
   }
 

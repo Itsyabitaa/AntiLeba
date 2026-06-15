@@ -1,18 +1,27 @@
 package com.antileba.anti_leba
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val channelName = "com.antileba.anti_leba/device_telemetry"
+    private val simEventChannelName = "$channelName/sim_events"
+
+    private var simEventSink: EventChannel.EventSink? = null
+    private var simReceiver: BroadcastReceiver? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -35,6 +44,53 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        EventChannel(flutterEngine.dartExecutor.binaryMessenger, simEventChannelName)
+            .setStreamHandler(object : EventChannel.StreamHandler {
+                override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
+                    simEventSink = events
+                    registerSimReceiver()
+                    events?.success(readSimStatus())
+                }
+
+                override fun onCancel(arguments: Any?) {
+                    unregisterSimReceiver()
+                    simEventSink = null
+                }
+            })
+    }
+
+    override fun onDestroy() {
+        unregisterSimReceiver()
+        super.onDestroy()
+    }
+
+    private fun registerSimReceiver() {
+        if (simReceiver != null) return
+
+        simReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                simEventSink?.success(readSimStatus())
+            }
+        }
+
+        // Standard SIM broadcast — not exposed as Intent/TelephonyManager constant on all SDKs.
+        val filter = IntentFilter("android.intent.action.SIM_STATE_CHANGED")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(simReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(simReceiver, filter)
+        }
+    }
+
+    private fun unregisterSimReceiver() {
+        simReceiver?.let {
+            try {
+                unregisterReceiver(it)
+            } catch (_: IllegalArgumentException) {
+            }
+        }
+        simReceiver = null
     }
 
     private fun isSmsCapable(): Boolean {

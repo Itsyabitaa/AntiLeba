@@ -80,9 +80,10 @@ model Device {
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
 
-  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessions Session[]
-  locations Location[]
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions   Session[]
+  locations  Location[]
+  simChanges SimChange[]
 
   @@index([userId])
   @@index([status])
@@ -108,4 +109,22 @@ model Location {
   @@unique([deviceId, clientEventId])
   @@index([deviceId, recordedAt])
   @@map("locations")
+}
+
+model SimChange {
+  id                String   @id @default(uuid()) @db.Uuid
+  deviceId          String   @map("device_id") @db.Uuid
+  clientEventId     String?  @map("client_event_id") @db.VarChar(36)
+  previousSerial    String?  @map("previous_serial") @db.VarChar(40)
+  newSerial         String?  @map("new_serial") @db.VarChar(40)
+  previousOperator  String?  @map("previous_operator") @db.VarChar(60)
+  newOperator       String?  @map("new_operator") @db.VarChar(60)
+  detectedAt        DateTime @map("detected_at") @db.Timestamptz()
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, clientEventId])
+  @@index([deviceId, detectedAt])
+  @@map("sim_changes")
 }
