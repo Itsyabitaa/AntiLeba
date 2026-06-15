@@ -138,6 +138,10 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000   # Android emulator
 | GET    | `/api/sim-changes?deviceId=` | Bearer | List SIM change events         |
 | POST   | `/api/photos`             | Bearer   | Upload evidence photo (multipart)|
 | GET    | `/api/photos?deviceId=`   | Bearer   | List photo metadata            |
+| POST   | `/api/commands`           | Bearer   | Issue remote command           |
+| GET    | `/api/commands?deviceId=` | Bearer   | List command history           |
+| POST   | `/api/commands/ack`       | Bearer   | Acknowledge command execution  |
+| WS     | `/commands` (Socket.IO)   | JWT handshake | Real-time command delivery |
 
 All routes are protected by a global `JwtAuthGuard`; public routes opt out
 with `@Public()`.
@@ -170,4 +174,5 @@ with `@Public()`.
 | 5      | **(done)** SMS fallback + SIM watch + emergency alert module    |
 | 6      | **(done)** SIM change detection + theft mode + event logging    |
 | 8      | **(done)** Camera evidence capture + photo upload + offline queue |
-| 7+     | Remote commands, admin dashboard, hardening                     |
+| 9      | **(done)** Remote command system (WebSocket + command executor)    |
+| 10+    | Admin dashboard, hardening                                          |
