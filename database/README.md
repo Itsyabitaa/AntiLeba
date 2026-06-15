@@ -8,7 +8,7 @@ Owns the schema for the Smart Anti-Theft Recovery System.
 | --------- | ------------------------------------------------------------- |
 | `users`   | Account credentials, role, contact info                        |
 | `devices` | Devices enrolled by a user (Android ID, SIM, FCM token, etc.) |
-| `locations` | GPS fixes linked to a device (Sprint 3)                      |
+| `locations` | GPS fixes linked to a device; `client_event_id` for idempotent sync (Sprint 3–4) |
 | `sessions` | Active JWT sessions (Sprint 2)                              |
 
 ## Bootstrap
