@@ -25,10 +25,12 @@ export class DevicesService {
   }
 
   findByIdForUser(id: string, userId: string): Promise<Device> {
-    return this.prisma.device.findFirst({ where: { id, userId } }).then((device) => {
-      if (!device) throw new NotFoundException('Device not found');
-      return device;
-    });
+    return this.prisma.device
+      .findFirst({ where: { id, userId } })
+      .then((device) => {
+        if (!device) throw new NotFoundException('Device not found');
+        return device;
+      });
   }
 
   async register(
@@ -41,7 +43,9 @@ export class DevicesService {
     });
 
     if (existing && existing.userId !== userId) {
-      throw new ConflictException('Device is already enrolled to another account');
+      throw new ConflictException(
+        'Device is already enrolled to another account',
+      );
     }
 
     const data = {
