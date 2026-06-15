@@ -71,7 +71,7 @@ class RemoteCommandWebSocket {
     socket.onConnectError((dynamic error) {
       _logger.e('Remote command WS connect_error: $error');
       if (!completer.isCompleted) {
-        completer.completeError(error ?? 'connect_error');
+        completer.completeError(error is Object ? error : 'connect_error');
       }
     });
 
@@ -85,7 +85,7 @@ class RemoteCommandWebSocket {
 
     socket.connect();
 
-    await completer.timeout(
+    await completer.future.timeout(
       const Duration(seconds: 12),
       onTimeout: () {
         if (socket.connected) return;

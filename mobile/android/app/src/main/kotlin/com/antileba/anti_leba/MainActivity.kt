@@ -4,7 +4,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.media.AudioAttributes
+import android.media.Ringtone
+import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.telephony.SmsManager
 import android.telephony.TelephonyManager
 import io.flutter.embedding.android.FlutterActivity
@@ -18,6 +27,8 @@ class MainActivity : FlutterActivity() {
 
     private var simEventSink: EventChannel.EventSink? = null
     private var simReceiver: BroadcastReceiver? = null
+    private var alarmRingtone: Ringtone? = null
+    private var alarmStopHandler: Handler? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -41,6 +52,19 @@ class MainActivity : FlutterActivity() {
                             result.error("SEND_FAILED", error.message, null)
                         }
                     }
+                    "playAlarm" -> {
+                        val durationSeconds = call.argument<Int>("durationSeconds") ?: 15
+                        try {
+                            playAlarm(durationSeconds)
+                            result.success(true)
+                        } catch (error: Exception) {
+                            result.error("ALARM_FAILED", error.message, null)
+                        }
+                    }
+                    "stopAlarm" -> {
+                        stopAlarm()
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -61,6 +85,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        stopAlarm()
         unregisterSimReceiver()
         super.onDestroy()
     }
@@ -146,5 +171,65 @@ class MainActivity : FlutterActivity() {
         } catch (_: SecurityException) {
             "UNKNOWN"
         }
+    }
+
+    private fun playAlarm(durationSeconds: Int) {
+        stopAlarm()
+
+        val alarmUri: Uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+
+        alarmRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri)?.apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            }
+            play()
+        }
+
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = getSystemService(VibratorManager::class.java)
+            manager?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+
+        vibrator?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                it.vibrate(
+                    VibrationEffect.createWaveform(
+                        longArrayOf(0, 800, 400, 800, 400, 800),
+                        0,
+                    ),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                it.vibrate(longArrayOf(0, 800, 400, 800, 400, 800), 0)
+            }
+        }
+
+        val handler = Handler(Looper.getMainLooper())
+        alarmStopHandler = handler
+        handler.postDelayed({ stopAlarm() }, durationSeconds.coerceIn(5, 60) * 1000L)
+    }
+
+    private fun stopAlarm() {
+        alarmStopHandler?.removeCallbacksAndMessages(null)
+        alarmStopHandler = null
+
+        alarmRingtone?.stop()
+        alarmRingtone = null
+
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = getSystemService(VibratorManager::class.java)
+            manager?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        vibrator?.cancel()
     }
 }

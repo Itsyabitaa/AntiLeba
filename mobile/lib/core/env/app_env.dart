@@ -13,6 +13,9 @@ class AppEnv {
 
   static String get apiRoot => '$apiBaseUrl$apiPrefix';
 
+  /// Socket.IO namespace for remote commands (same host as [apiBaseUrl]).
+  static String get commandsWsUrl => '$apiBaseUrl/commands';
+
   static const String appName = String.fromEnvironment(
     'APP_NAME',
     defaultValue: 'Anti-Leba',

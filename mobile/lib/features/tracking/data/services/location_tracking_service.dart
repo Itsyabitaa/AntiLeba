@@ -56,6 +56,17 @@ class LocationTrackingService {
     _deviceId = null;
   }
 
+  Future<bool> requestImmediateFix({
+    LocationCollectedCallback? onCollected,
+  }) async {
+    final deviceId = _deviceId;
+    if (deviceId == null) return false;
+
+    final settings = _locationSettings();
+    await _collectPosition(settings, onCollected);
+    return true;
+  }
+
   LocationSettings _locationSettings() {
     if (Platform.isAndroid) {
       return AndroidSettings(

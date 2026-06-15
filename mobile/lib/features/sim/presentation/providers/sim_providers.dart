@@ -139,6 +139,15 @@ class SimController extends StateNotifier<SimState> {
     _lastLocation = point;
   }
 
+  Future<void> activateTheftModeRemotely({required String deviceId}) async {
+    if (state.theftModeActive) return;
+    state = state.copyWith(
+      theftModeActive: true,
+      lastChangeAt: DateTime.now(),
+      clearError: true,
+    );
+  }
+
   Future<void> _onSimChange(SimChangeEvent event) async {
     if (_responding || state.theftModeActive) return;
     _responding = true;

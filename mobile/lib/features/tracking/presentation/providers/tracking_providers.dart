@@ -7,6 +7,7 @@ import 'package:anti_leba/core/storage/hive_bootstrap.dart';
 import 'package:anti_leba/features/auth/domain/auth_session.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 import 'package:anti_leba/features/photos/presentation/providers/photo_providers.dart';
+import 'package:anti_leba/features/remote_commands/presentation/providers/remote_command_providers.dart';
 import 'package:anti_leba/features/sim/presentation/providers/sim_providers.dart';
 import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/sync/data/location_sync_engine.dart';
@@ -118,6 +119,7 @@ class TrackingController extends StateNotifier<TrackingState> {
           device: device,
         );
     await _ref.read(photoControllerProvider.notifier).start(deviceId);
+    await _ref.read(remoteCommandControllerProvider.notifier).start(deviceId);
 
     _syncEngine.start(onResult: _onSyncResult);
 
@@ -153,6 +155,7 @@ class TrackingController extends StateNotifier<TrackingState> {
     await _tracking.stop();
     await _syncEngine.stop();
     await _ref.read(photoControllerProvider.notifier).stop();
+    await _ref.read(remoteCommandControllerProvider.notifier).stop();
     await _ref.read(simControllerProvider.notifier).stop();
     await _ref.read(smsControllerProvider.notifier).stop();
     state = const TrackingState();
@@ -161,6 +164,15 @@ class TrackingController extends StateNotifier<TrackingState> {
   Future<void> syncNow() async {
     state = state.copyWith(isSyncing: true);
     await _syncEngine.syncWithRetry();
+  }
+
+  Future<void> requestLiveLocation() async {
+    final collected = await _tracking.requestImmediateFix(
+      onCollected: _onLocationCollected,
+    );
+    if (collected) {
+      await _syncEngine.syncWithRetry();
+    }
   }
 
   Future<void> refreshUnsyncedCount() async {
