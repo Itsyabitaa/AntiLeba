@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:anti_leba/core/network/dio_client.dart';
 import 'package:anti_leba/core/storage/hive_bootstrap.dart';
+import 'package:anti_leba/features/auth/domain/auth_session.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/sync/data/location_sync_engine.dart';
@@ -86,11 +87,16 @@ class TrackingState {
 
 class TrackingController extends StateNotifier<TrackingState> {
   TrackingController(this._ref) : super(const TrackingState()) {
-    _ref.listen<AsyncValue<dynamic>>(authControllerProvider, (previous, next) {
-      if (next.valueOrNull == null) {
-        unawaited(stop());
-      }
-    });
+    _ref.listen<AsyncValue<AuthSession?>>(
+      authControllerProvider,
+      (previous, next) {
+        final wasAuthenticated = previous?.valueOrNull != null;
+        final isAuthenticated = next.valueOrNull != null;
+        if (wasAuthenticated && !isAuthenticated) {
+          unawaited(stop());
+        }
+      },
+    );
   }
 
   final Ref _ref;
@@ -128,6 +134,11 @@ class TrackingController extends StateNotifier<TrackingState> {
   }
 
   Future<void> stop() async {
+    if (!state.isRunning &&
+        !_tracking.isRunning &&
+        !_syncEngine.isRunning) {
+      return;
+    }
     await _tracking.stop();
     await _syncEngine.stop();
     await _ref.read(smsControllerProvider.notifier).stop();

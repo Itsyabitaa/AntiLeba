@@ -47,6 +47,7 @@ class LocationSyncEngine {
   }
 
   Future<void> stop() async {
+    if (!isRunning) return;
     await _connectivitySub?.cancel();
     _connectivitySub = null;
     _retryTimer?.cancel();

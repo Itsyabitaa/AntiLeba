@@ -2,6 +2,7 @@ package com.antileba.anti_leba
 
 import android.content.Context
 import android.os.Build
+import android.telephony.SmsManager
 import android.telephony.TelephonyManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -16,9 +17,45 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "getSimStatus" -> result.success(readSimStatus())
+                    "isSmsCapable" -> result.success(isSmsCapable())
+                    "sendSms" -> {
+                        val to = call.argument<String>("to")
+                        val message = call.argument<String>("message")
+                        if (to.isNullOrBlank() || message == null) {
+                            result.error("INVALID_ARGS", "to and message required", null)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            sendSms(to, message)
+                            result.success(true)
+                        } catch (error: Exception) {
+                            result.error("SEND_FAILED", error.message, null)
+                        }
+                    }
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun isSmsCapable(): Boolean {
+        val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        return tm.phoneType != TelephonyManager.PHONE_TYPE_NONE
+    }
+
+    private fun sendSms(to: String, message: String) {
+        val smsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            getSystemService(SmsManager::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            SmsManager.getDefault()
+        }
+
+        if (message.length > 160) {
+            val parts = smsManager.divideMessage(message)
+            smsManager.sendMultipartTextMessage(to, null, parts, null, null)
+        } else {
+            smsManager.sendTextMessage(to, null, message, null, null)
+        }
     }
 
     private fun readSimStatus(): Map<String, String> {

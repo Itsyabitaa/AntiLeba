@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:anti_leba/core/env/app_env.dart';
 import 'package:anti_leba/core/storage/hive_bootstrap.dart';
-import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 import 'package:anti_leba/features/sms/data/datasources/sms_local_datasource.dart';
 import 'package:anti_leba/features/sms/data/repositories/sms_repository_impl.dart';
 import 'package:anti_leba/features/sms/data/services/battery_status_service.dart';
@@ -95,13 +94,7 @@ class SmsController extends StateNotifier<SmsState> {
           SmsState(
             emergencyNumberConfigured: AppEnv.emergencySmsNumber.isNotEmpty,
           ),
-        ) {
-    _ref.listen<AsyncValue<dynamic>>(authControllerProvider, (previous, next) {
-      if (next.valueOrNull == null) {
-        unawaited(stop());
-      }
-    });
-  }
+        );
 
   static const _simSerialKey = 'last_sim_serial';
 
@@ -123,6 +116,7 @@ class SmsController extends StateNotifier<SmsState> {
   }
 
   Future<void> stop() async {
+    if (!state.isRunning && !_engine.isRunning) return;
     await _engine.stop();
     state = SmsState(
       emergencyNumberConfigured: AppEnv.emergencySmsNumber.isNotEmpty,
