@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:anti_leba/features/tracking/data/services/location_permission_service.dart';
 import 'package:anti_leba/features/tracking/domain/location_point.dart';
@@ -17,7 +18,6 @@ class LocationTrackingService {
   final TrackingRepository _repository;
 
   StreamSubscription<Position>? _positionSub;
-  Timer? _syncTimer;
   String? _deviceId;
 
   bool get isRunning => _deviceId != null;
@@ -47,18 +47,12 @@ class LocationTrackingService {
       onError: (_) {},
     );
 
-    _syncTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-      unawaited(_repository.syncPending());
-    });
-
     return true;
   }
 
   Future<void> stop() async {
     await _positionSub?.cancel();
     _positionSub = null;
-    _syncTimer?.cancel();
-    _syncTimer = null;
     _deviceId = null;
   }
 
@@ -103,17 +97,18 @@ class LocationTrackingService {
     try {
       final pos = position ??
           await Geolocator.getCurrentPosition(locationSettings: settings);
-      final point = LocationPoint(
+      final point = LocationPoint.create(
+        clientEventId: const Uuid().v4(),
         deviceId: deviceId,
         latitude: pos.latitude,
         longitude: pos.longitude,
+        recordedAt: pos.timestamp,
         accuracy: pos.accuracy,
         altitude: pos.altitude,
         speed: pos.speed,
         heading: pos.heading,
-        recordedAt: pos.timestamp,
       );
-      final saved = await _repository.saveAndSync(point);
+      final saved = await _repository.saveLocally(point);
       if (onCollected != null) {
         await onCollected(saved);
       }

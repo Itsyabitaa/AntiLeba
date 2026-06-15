@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:anti_leba/core/network/dio_client.dart';
+import 'package:anti_leba/core/storage/hive_bootstrap.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
+import 'package:anti_leba/features/sync/data/location_sync_engine.dart';
+import 'package:anti_leba/features/sync/domain/sync_result.dart';
 import 'package:anti_leba/features/tracking/data/datasources/location_local_datasource.dart';
 import 'package:anti_leba/features/tracking/data/datasources/location_remote_datasource.dart';
 import 'package:anti_leba/features/tracking/data/repositories/tracking_repository_impl.dart';
@@ -13,7 +16,7 @@ import 'package:anti_leba/features/tracking/domain/location_point.dart';
 import 'package:anti_leba/features/tracking/domain/tracking_repository.dart';
 
 final locationLocalDataSourceProvider = Provider<LocationLocalDataSource>((ref) {
-  return LocationLocalDataSource(AppDatabase.instance);
+  return LocationLocalDataSource(HiveBootstrap.pendingLocationsBox);
 });
 
 final trackingRepositoryProvider = Provider<TrackingRepository>((ref) {
@@ -21,6 +24,12 @@ final trackingRepositoryProvider = Provider<TrackingRepository>((ref) {
     ref.watch(locationLocalDataSourceProvider),
     LocationRemoteDataSource(ref.watch(dioProvider)),
   );
+});
+
+final locationSyncEngineProvider = Provider<LocationSyncEngine>((ref) {
+  final engine = LocationSyncEngine(ref.watch(trackingRepositoryProvider));
+  ref.onDispose(engine.stop);
+  return engine;
 });
 
 final locationPermissionServiceProvider =
@@ -36,31 +45,39 @@ final locationTrackingServiceProvider = Provider<LocationTrackingService>((ref) 
 class TrackingState {
   const TrackingState({
     this.isRunning = false,
+    this.isSyncing = false,
     this.lastLocation,
     this.unsyncedCount = 0,
     this.lastCollectedAt,
+    this.lastSyncedAt,
     this.error,
   });
 
   final bool isRunning;
+  final bool isSyncing;
   final LocationPoint? lastLocation;
   final int unsyncedCount;
   final DateTime? lastCollectedAt;
+  final DateTime? lastSyncedAt;
   final String? error;
 
   TrackingState copyWith({
     bool? isRunning,
+    bool? isSyncing,
     LocationPoint? lastLocation,
     int? unsyncedCount,
     DateTime? lastCollectedAt,
+    DateTime? lastSyncedAt,
     String? error,
     bool clearError = false,
   }) {
     return TrackingState(
       isRunning: isRunning ?? this.isRunning,
+      isSyncing: isSyncing ?? this.isSyncing,
       lastLocation: lastLocation ?? this.lastLocation,
       unsyncedCount: unsyncedCount ?? this.unsyncedCount,
       lastCollectedAt: lastCollectedAt ?? this.lastCollectedAt,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -80,8 +97,11 @@ class TrackingController extends StateNotifier<TrackingState> {
   LocationTrackingService get _tracking =>
       _ref.read(locationTrackingServiceProvider);
   TrackingRepository get _repository => _ref.read(trackingRepositoryProvider);
+  LocationSyncEngine get _syncEngine => _ref.read(locationSyncEngineProvider);
 
   Future<void> start(String deviceId) async {
+    _syncEngine.start(onResult: _onSyncResult);
+
     final started = await _tracking.start(
       deviceId,
       onCollected: _onLocationCollected,
@@ -95,8 +115,7 @@ class TrackingController extends StateNotifier<TrackingState> {
       return;
     }
 
-    final unsynced = await _repository.countUnsynced();
-    await _repository.syncPending();
+    await _syncEngine.syncWithRetry();
     final remaining = await _repository.countUnsynced();
 
     state = state.copyWith(
@@ -104,25 +123,22 @@ class TrackingController extends StateNotifier<TrackingState> {
       unsyncedCount: remaining,
       clearError: true,
     );
-
-    if (remaining < unsynced) {
-      state = state.copyWith(unsyncedCount: remaining);
-    }
   }
 
   Future<void> stop() async {
     await _tracking.stop();
+    await _syncEngine.stop();
     state = const TrackingState();
+  }
+
+  Future<void> syncNow() async {
+    state = state.copyWith(isSyncing: true);
+    await _syncEngine.syncWithRetry();
   }
 
   Future<void> refreshUnsyncedCount() async {
     final count = await _repository.countUnsynced();
     state = state.copyWith(unsyncedCount: count);
-  }
-
-  Future<void> syncNow() async {
-    await _repository.syncPending();
-    await refreshUnsyncedCount();
   }
 
   Future<void> _onLocationCollected(LocationPoint point) async {
@@ -133,6 +149,15 @@ class TrackingController extends StateNotifier<TrackingState> {
       unsyncedCount: unsynced,
       isRunning: true,
       clearError: true,
+    );
+    unawaited(_syncEngine.syncWithRetry());
+  }
+
+  void _onSyncResult(SyncResult result) {
+    state = state.copyWith(
+      isSyncing: false,
+      unsyncedCount: result.remaining,
+      lastSyncedAt: result.hadWork ? DateTime.now() : state.lastSyncedAt,
     );
   }
 }
