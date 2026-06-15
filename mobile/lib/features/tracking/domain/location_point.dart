@@ -1,18 +1,45 @@
 class LocationPoint {
-  const LocationPoint({
+  LocationPoint({
+    required this.clientEventId,
     required this.deviceId,
     required this.latitude,
     required this.longitude,
     required this.recordedAt,
-    this.localId,
     this.accuracy,
     this.altitude,
     this.speed,
     this.heading,
+    this.retryCount = 0,
+    this.lastAttemptAt,
   });
+
+  factory LocationPoint.create({
+    required String deviceId,
+    required double latitude,
+    required double longitude,
+    required DateTime recordedAt,
+    required String clientEventId,
+    double? accuracy,
+    double? altitude,
+    double? speed,
+    double? heading,
+  }) {
+    return LocationPoint(
+      clientEventId: clientEventId,
+      deviceId: deviceId,
+      latitude: latitude,
+      longitude: longitude,
+      recordedAt: recordedAt,
+      accuracy: accuracy,
+      altitude: altitude,
+      speed: speed,
+      heading: heading,
+    );
+  }
 
   factory LocationPoint.fromJson(Map<String, dynamic> json) {
     return LocationPoint(
+      clientEventId: json['clientEventId'] as String? ?? '',
       deviceId: json['deviceId'] as String,
       latitude: (json['latitude'] as num).toDouble(),
       longitude: (json['longitude'] as num).toDouble(),
@@ -24,21 +51,25 @@ class LocationPoint {
     );
   }
 
-  factory LocationPoint.fromDbMap(Map<String, Object?> row) {
+  factory LocationPoint.fromHiveMap(Map<dynamic, dynamic> map) {
     return LocationPoint(
-      localId: row['id'] as int?,
-      deviceId: row['device_id'] as String,
-      latitude: row['latitude'] as double,
-      longitude: row['longitude'] as double,
-      recordedAt: DateTime.parse(row['recorded_at'] as String),
-      accuracy: row['accuracy'] as double?,
-      altitude: row['altitude'] as double?,
-      speed: row['speed'] as double?,
-      heading: row['heading'] as double?,
+      clientEventId: map['clientEventId'] as String,
+      deviceId: map['deviceId'] as String,
+      latitude: (map['latitude'] as num).toDouble(),
+      longitude: (map['longitude'] as num).toDouble(),
+      recordedAt: DateTime.parse(map['recordedAt'] as String),
+      accuracy: (map['accuracy'] as num?)?.toDouble(),
+      altitude: (map['altitude'] as num?)?.toDouble(),
+      speed: (map['speed'] as num?)?.toDouble(),
+      heading: (map['heading'] as num?)?.toDouble(),
+      retryCount: (map['retryCount'] as num?)?.toInt() ?? 0,
+      lastAttemptAt: map['lastAttemptAt'] != null
+          ? DateTime.parse(map['lastAttemptAt'] as String)
+          : null,
     );
   }
 
-  final int? localId;
+  final String clientEventId;
   final String deviceId;
   final double latitude;
   final double longitude;
@@ -47,8 +78,11 @@ class LocationPoint {
   final double? speed;
   final double? heading;
   final DateTime recordedAt;
+  final int retryCount;
+  final DateTime? lastAttemptAt;
 
   Map<String, dynamic> toApiJson() => <String, dynamic>{
+        'clientEventId': clientEventId,
         'deviceId': deviceId,
         'latitude': latitude,
         'longitude': longitude,
@@ -59,21 +93,27 @@ class LocationPoint {
         if (heading != null) 'heading': heading,
       };
 
-  Map<String, Object?> toDbMap() => <String, Object?>{
-        'device_id': deviceId,
+  Map<String, dynamic> toHiveMap() => <String, dynamic>{
+        'clientEventId': clientEventId,
+        'deviceId': deviceId,
         'latitude': latitude,
         'longitude': longitude,
         'accuracy': accuracy,
         'altitude': altitude,
         'speed': speed,
         'heading': heading,
-        'recorded_at': recordedAt.toUtc().toIso8601String(),
-        'synced': 0,
+        'recordedAt': recordedAt.toUtc().toIso8601String(),
+        'retryCount': retryCount,
+        if (lastAttemptAt != null)
+          'lastAttemptAt': lastAttemptAt!.toUtc().toIso8601String(),
       };
 
-  LocationPoint copyWith({int? localId}) {
+  LocationPoint copyWith({
+    int? retryCount,
+    DateTime? lastAttemptAt,
+  }) {
     return LocationPoint(
-      localId: localId ?? this.localId,
+      clientEventId: clientEventId,
       deviceId: deviceId,
       latitude: latitude,
       longitude: longitude,
@@ -82,6 +122,8 @@ class LocationPoint {
       altitude: altitude,
       speed: speed,
       heading: heading,
+      retryCount: retryCount ?? this.retryCount,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
     );
   }
 }
