@@ -3,15 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:anti_leba/core/logging/app_logger.dart';
+import 'package:anti_leba/core/storage/hive_bootstrap.dart';
 
 /// One-shot startup work that must finish before the first frame.
-///
-/// Returns a configured Riverpod [ProviderContainer] so callers can
-/// pre-warm providers (e.g. session, secure storage) before runApp.
 Future<ProviderContainer> bootstrap() async {
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,
   ]);
+
+  await HiveBootstrap.ensureInitialized();
 
   FlutterError.onError = (FlutterErrorDetails details) {
     AppLogger.I.e(
