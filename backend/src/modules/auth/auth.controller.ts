@@ -39,4 +39,10 @@ export class AuthController {
   me(@CurrentUser() user: AuthUser): AuthUser {
     return user;
   }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async logout(@CurrentUser() user: AuthUser): Promise<void> {
+    await this.auth.logout(user.sessionId);
+  }
 }
