@@ -10,7 +10,7 @@
 
 ## Acceptance criteria
 
-- [x] SMS sent successfully without internet (cellular SMS via `telephony`)
+- [x] SMS sent successfully without internet (cellular SMS via Android `SmsManager`)
 - [x] SMS contains accurate data (lat, lng, battery %, SIM status, timestamp)
 - [x] Retry mechanism works (Hive pending queue + 3 attempts with backoff)
 
@@ -19,7 +19,7 @@
 | Component | Implementation |
 | --------- | -------------- |
 | Internet loss detection | `ConnectivityService` + `SmsFallbackEngine` listens for offline |
-| Emergency SMS send | `SmsSendService` (`telephony`) after runtime `Permission.sms` |
+| Emergency SMS send | `SmsSendService` (Android `SmsManager` via platform channel) after runtime `Permission.sms` |
 | Alert formatting | `SmsMessageFormatter` — compact multi-line body |
 | Retry | Hive `pending_sms_alerts` + periodic 2-min retry + manual **Retry** on dashboard |
 | Dedup | Hive `sent_sms_alerts` keyed by GPS `clientEventId` |
