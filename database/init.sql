@@ -72,6 +72,23 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id    ON sessions (user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
 
+-- locations ----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS locations (
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    device_id    UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    latitude     DOUBLE PRECISION NOT NULL,
+    longitude    DOUBLE PRECISION NOT NULL,
+    accuracy     DOUBLE PRECISION,
+    altitude     DOUBLE PRECISION,
+    speed        DOUBLE PRECISION,
+    heading      DOUBLE PRECISION,
+    recorded_at  TIMESTAMPTZ NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_locations_device_recorded
+    ON locations (device_id, recorded_at);
+
 -- updated_at trigger -------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$

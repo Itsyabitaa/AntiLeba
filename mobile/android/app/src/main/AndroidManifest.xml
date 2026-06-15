@@ -74,6 +74,13 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Geolocator foreground location service (Sprint 3) -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            android:exported="false"
+            android:foregroundServiceType="location"
+            android:enabled="true" />
     </application>
 
     <queries>
