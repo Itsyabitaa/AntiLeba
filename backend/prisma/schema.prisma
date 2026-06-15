@@ -39,10 +39,27 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
 
-  devices Device[]
+  devices  Device[]
+  sessions Session[]
 
   @@index([email])
   @@map("users")
+}
+
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  deviceId  String?   @map("device_id") @db.Uuid
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz()
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz()
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
 
 model Device {
@@ -63,7 +80,8 @@ model Device {
   createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions Session[]
 
   @@index([userId])
   @@index([status])
