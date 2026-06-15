@@ -34,6 +34,21 @@ enum PhotoTrigger {
   MANUAL
 }
 
+enum CommandType {
+  ACTIVATE_THEFT_MODE
+  REQUEST_LIVE_LOCATION
+  TRIGGER_ALARM
+  CAPTURE_IMAGE
+}
+
+enum CommandStatus {
+  PENDING
+  DELIVERED
+  ACKNOWLEDGED
+  FAILED
+  EXPIRED
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique @db.VarChar(190)
@@ -48,6 +63,7 @@ model User {
 
   devices  Device[]
   sessions Session[]
+  commands Command[]
 
   @@index([email])
   @@map("users")
@@ -92,6 +108,7 @@ model Device {
   locations  Location[]
   simChanges SimChange[]
   photos     Photo[]
+  commands   Command[]
 
   @@index([userId])
   @@index([status])
@@ -153,4 +170,27 @@ model Photo {
   @@unique([deviceId, clientEventId])
   @@index([deviceId, capturedAt])
   @@map("photos")
+}
+
+model Command {
+  id            String        @id @default(uuid()) @db.Uuid
+  deviceId      String        @map("device_id") @db.Uuid
+  issuedById    String        @map("issued_by_id") @db.Uuid
+  clientEventId String?       @map("client_event_id") @db.VarChar(36)
+  type          CommandType
+  status        CommandStatus @default(PENDING)
+  payload       Json?
+  issuedAt      DateTime      @default(now()) @map("issued_at") @db.Timestamptz()
+  deliveredAt   DateTime?     @map("delivered_at") @db.Timestamptz()
+  completedAt   DateTime?     @map("completed_at") @db.Timestamptz()
+  errorMessage  String?       @map("error_message") @db.VarChar(500)
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  issuedBy User   @relation(fields: [issuedById], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, clientEventId])
+  @@index([deviceId, issuedAt])
+  @@index([status])
+  @@map("commands")
 }
