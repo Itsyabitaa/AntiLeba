@@ -131,6 +131,9 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000   # Android emulator
 | POST   | `/api/devices/register`   | Bearer   | Enroll/update device           |
 | GET    | `/api/devices`            | Bearer   | List user's devices            |
 | GET    | `/api/devices/:id`        | Bearer   | Get one owned device           |
+| POST   | `/api/locations`          | Bearer   | Store GPS fix                  |
+| POST   | `/api/locations/batch`    | Bearer   | Batch upload (offline sync)    |
+| GET    | `/api/locations?deviceId=` | Bearer  | List recent fixes              |
 
 All routes are protected by a global `JwtAuthGuard`; public routes opt out
 with `@Public()`.
@@ -158,8 +161,8 @@ with `@Public()`.
 | ------ | ------------------------------------------------------------- |
 | 1      | **(done)** project initialization                         |
 | 2      | **(done)** auth + device registration                     |
-| 3      | GPS tracking + foreground service                         |
-| 4      | Offline buffer + sync                                         |
+| 3      | **(done)** GPS tracking + foreground service + offline buffer |
+| 4      | Offline buffer + sync (extended)                              |
 | 5      | SIM-change detection + SMS fallback                           |
 | 6      | Camera capture (evidence)                                     |
 | 7+     | Remote commands, alerts, admin dashboard, hardening           |
