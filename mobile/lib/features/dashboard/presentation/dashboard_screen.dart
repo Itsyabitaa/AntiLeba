@@ -7,6 +7,7 @@ import 'package:anti_leba/core/router/app_router.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 import 'package:anti_leba/features/devices/domain/device.dart';
 import 'package:anti_leba/features/photos/presentation/providers/photo_providers.dart';
+import 'package:anti_leba/features/remote_commands/presentation/providers/remote_command_providers.dart';
 import 'package:anti_leba/features/sim/presentation/providers/sim_providers.dart';
 import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/tracking/presentation/providers/tracking_providers.dart';
@@ -29,6 +30,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final sms = ref.watch(smsControllerProvider);
     final sim = ref.watch(simControllerProvider);
     final photos = ref.watch(photoControllerProvider);
+    final remoteCommands = ref.watch(remoteCommandControllerProvider);
 
     ref.listen<AsyncValue<Device?>>(enrolledDeviceProvider, (previous, next) {
       next.whenData((Device? device) async {
@@ -212,6 +214,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
           const SizedBox(height: 12),
           _StatusCard(
+            title: 'Remote commands',
+            subtitle: _remoteCommandSubtitle(remoteCommands),
+            icon: remoteCommands.isConnected
+                ? Icons.podcasts
+                : Icons.podcasts_outlined,
+          ),
+          if (remoteCommands.error != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              remoteCommands.error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          const SizedBox(height: 12),
+          _StatusCard(
             title: 'Offline buffer',
             subtitle: tracking.isSyncing
                 ? 'Syncing ${tracking.unsyncedCount} location(s)…'
@@ -292,6 +309,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (photos.lastUploadedAt != null) {
       parts.add(
         'last upload ${DateFormat.Hm().format(photos.lastUploadedAt!.toLocal())}',
+      );
+    }
+    return parts.join(' · ');
+  }
+
+  String _remoteCommandSubtitle(RemoteCommandState remoteCommands) {
+    if (!remoteCommands.isListening) {
+      return 'Idle until tracking starts';
+    }
+    if (!remoteCommands.isConnected) {
+      return 'Connecting to command channel…';
+    }
+    final parts = <String>['Listening for owner commands'];
+    final last = remoteCommands.lastCommand;
+    if (last != null) {
+      parts.add('last ${last.type.apiValue}');
+    }
+    if (remoteCommands.lastAckStatus != null) {
+      parts.add(remoteCommands.lastAckStatus!.toLowerCase());
+    }
+    if (remoteCommands.lastExecutedAt != null) {
+      parts.add(
+        DateFormat.Hm().format(remoteCommands.lastExecutedAt!.toLocal()),
       );
     }
     return parts.join(' · ');
