@@ -105,15 +105,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 12),
           _StatusCard(
             title: 'Offline buffer',
-            subtitle: '${tracking.unsyncedCount} unsynced location(s)',
+            subtitle: tracking.isSyncing
+                ? 'Syncing ${tracking.unsyncedCount} location(s)…'
+                : '${tracking.unsyncedCount} unsynced location(s)'
+                    '${tracking.lastSyncedAt != null ? ' · last sync ${DateFormat.Hm().format(tracking.lastSyncedAt!.toLocal())}' : ''}',
             icon: Icons.cloud_off_outlined,
-            trailing: tracking.unsyncedCount > 0
+            trailing: tracking.unsyncedCount > 0 && !tracking.isSyncing
                 ? TextButton(
                     onPressed: () =>
                         ref.read(trackingControllerProvider.notifier).syncNow(),
                     child: const Text('Sync'),
                   )
-                : null,
+                : tracking.isSyncing
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
           ),
         ],
       ),
