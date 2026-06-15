@@ -3,28 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:anti_leba/core/router/app_router.dart';
+import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 
-class SplashScreen extends ConsumerStatefulWidget {
+class SplashScreen extends ConsumerWidget {
   const SplashScreen({super.key});
 
   @override
-  ConsumerState<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends ConsumerState<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future<void>.delayed(const Duration(milliseconds: 800));
-      if (!mounted) return;
-      // TODO(sprint-2): inspect session and route to dashboard if logged in.
-      context.go(AppRoutes.login);
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<AsyncValue<dynamic>>(authControllerProvider, (previous, next) {
+      if (next.isLoading) return;
+      final destination =
+          next.valueOrNull != null ? AppRoutes.dashboard : AppRoutes.login;
+      context.go(destination);
     });
-  }
 
-  @override
-  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: scheme.surface,

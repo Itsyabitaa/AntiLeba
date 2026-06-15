@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:anti_leba/core/env/app_env.dart';
 import 'package:anti_leba/core/logging/app_logger.dart';
+import 'package:anti_leba/core/network/access_token_provider.dart';
 
 final Provider<Dio> dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: AppEnv.apiBaseUrl,
+      baseUrl: AppEnv.apiRoot,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 20),
       headers: <String, String>{
@@ -20,6 +21,10 @@ final Provider<Dio> dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) {
+        final token = ref.read(accessTokenProvider);
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
         AppLogger.I.d('→ ${options.method} ${options.uri}');
         handler.next(options);
       },

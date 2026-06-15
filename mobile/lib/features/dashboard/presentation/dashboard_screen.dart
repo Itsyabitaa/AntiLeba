@@ -3,12 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:anti_leba/core/router/app_router.dart';
+import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(authControllerProvider).valueOrNull;
+    final deviceAsync = ref.watch(enrolledDeviceProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dashboard'),
@@ -16,26 +20,58 @@ class DashboardScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
-            onPressed: () => context.go(AppRoutes.login),
+            onPressed: () async {
+              await ref.read(authControllerProvider.notifier).logout();
+              if (context.mounted) context.go(AppRoutes.login);
+            },
           ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: const <Widget>[
-          _StatusCard(
+        children: <Widget>[
+          if (session != null)
+            Card(
+              child: ListTile(
+                leading: const CircleAvatar(child: Icon(Icons.person)),
+                title: Text(session.fullName ?? session.email),
+                subtitle: Text(session.email),
+              ),
+            ),
+          const SizedBox(height: 12),
+          deviceAsync.when(
+            data: (device) => _StatusCard(
+              title: 'This device',
+              subtitle: device == null
+                  ? 'Not enrolled yet'
+                  : '${device.label} · ${device.status.name}',
+              icon: Icons.smartphone,
+            ),
+            loading: () => const _StatusCard(
+              title: 'This device',
+              subtitle: 'Loading enrollment…',
+              icon: Icons.smartphone,
+            ),
+            error: (_, __) => const _StatusCard(
+              title: 'This device',
+              subtitle: 'Could not load device info',
+              icon: Icons.smartphone,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _StatusCard(
             title: 'Tracking',
             subtitle: 'GPS service idle',
             icon: Icons.location_on_outlined,
           ),
-          SizedBox(height: 12),
-          _StatusCard(
+          const SizedBox(height: 12),
+          const _StatusCard(
             title: 'SIM watch',
             subtitle: 'Monitoring SIM changes',
             icon: Icons.sim_card_outlined,
           ),
-          SizedBox(height: 12),
-          _StatusCard(
+          const SizedBox(height: 12),
+          const _StatusCard(
             title: 'Offline buffer',
             subtitle: '0 unsynced events',
             icon: Icons.cloud_off_outlined,

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:anti_leba/core/errors/failures.dart';
 import 'package:anti_leba/core/router/app_router.dart';
+import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +17,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -24,9 +27,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
-    // TODO(sprint-2): wire to AuthRepository.login and persist token.
-    context.go(AppRoutes.dashboard);
+    if (!_formKey.currentState!.validate() || _submitting) return;
+
+    setState(() => _submitting = true);
+    try {
+      await ref.read(authControllerProvider.notifier).login(
+            email: _email.text.trim(),
+            password: _password.text,
+          );
+      if (!mounted) return;
+      context.go(AppRoutes.dashboard);
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is Failure ? error.message : 'Sign in failed';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
@@ -49,6 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: const <String>[AutofillHints.email],
                   decoration: const InputDecoration(labelText: 'Email'),
                   validator: (v) =>
                       (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
@@ -57,18 +77,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _password,
                   obscureText: true,
+                  autofillHints: const <String>[AutofillHints.password],
                   decoration: const InputDecoration(labelText: 'Password'),
                   validator: (v) =>
-                      (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                      (v == null || v.length < 8) ? 'Min 8 characters' : null,
                 ),
                 const SizedBox(height: 24),
                 FilledButton(
-                  onPressed: _submit,
-                  child: const Text('Sign in'),
+                  onPressed: _submitting ? null : _submit,
+                  child: _submitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Sign in'),
                 ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () => context.go(AppRoutes.register),
+                  onPressed: _submitting
+                      ? null
+                      : () => context.go(AppRoutes.register),
                   child: const Text("Don't have an account? Register"),
                 ),
               ],
