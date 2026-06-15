@@ -78,8 +78,7 @@ export class AuthService {
   }
 
   private async buildAuthResponse(user: User): Promise<AuthResponse> {
-    const expiresIn =
-      this.config.get<string>('JWT_EXPIRES_IN') ?? '1d';
+    const expiresIn = this.config.get<string>('JWT_EXPIRES_IN') ?? '1d';
     const expiresAt = expiresAtFromConfig(expiresIn);
     const session = await this.sessions.create(user.id, expiresAt);
 
