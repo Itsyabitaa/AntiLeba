@@ -17,6 +17,10 @@ class TrackingRepositoryImpl implements TrackingRepository {
   }
 
   @override
+  Future<void> purgeStaleEntries(String deviceId) =>
+      _local.purgeExceptDevice(deviceId);
+
+  @override
   Future<SyncResult> syncPending() async {
     final pending = await _local.getUnsynced();
     if (pending.isEmpty) {

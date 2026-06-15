@@ -40,6 +40,24 @@ class LocationLocalDataSource {
     await box.deleteAll(clientEventIds);
   }
 
+  Future<void> purgeExceptDevice(String deviceId) async {
+    final box = await _openBox();
+    final staleKeys = <dynamic>[];
+    for (final key in box.keys) {
+      final raw = box.get(key);
+      if (raw is! Map) {
+        staleKeys.add(key);
+        continue;
+      }
+      if (LocationPoint.fromHiveMap(raw).deviceId != deviceId) {
+        staleKeys.add(key);
+      }
+    }
+    if (staleKeys.isNotEmpty) {
+      await box.deleteAll(staleKeys);
+    }
+  }
+
   Future<void> recordFailedAttempt(List<String> clientEventIds) async {
     if (clientEventIds.isEmpty) return;
     final box = await _openBox();

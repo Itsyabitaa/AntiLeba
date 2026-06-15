@@ -107,6 +107,7 @@ class TrackingController extends StateNotifier<TrackingState> {
   LocationSyncEngine get _syncEngine => _ref.read(locationSyncEngineProvider);
 
   Future<void> start(String deviceId) async {
+    await _repository.purgeStaleEntries(deviceId);
     await _ref.read(smsControllerProvider.notifier).start();
     _syncEngine.start(onResult: _onSyncResult);
 
