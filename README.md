@@ -126,7 +126,11 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000   # Android emulator
 | GET    | `/api/health`         | public   | Liveness + DB reachability   |
 | POST   | `/api/auth/register`  | public   | Create a new owner account   |
 | POST   | `/api/auth/login`     | public   | Exchange creds for JWT       |
-| GET    | `/api/auth/me`        | Bearer   | Current authenticated user   |
+| GET    | `/api/auth/me`            | Bearer   | Current authenticated user   |
+| POST   | `/api/auth/logout`        | Bearer   | Revoke session (204)           |
+| POST   | `/api/devices/register`   | Bearer   | Enroll/update device           |
+| GET    | `/api/devices`            | Bearer   | List user's devices            |
+| GET    | `/api/devices/:id`        | Bearer   | Get one owned device           |
 
 All routes are protected by a global `JwtAuthGuard`; public routes opt out
 with `@Public()`.
@@ -152,9 +156,9 @@ with `@Public()`.
 
 | Sprint | Focus                                                         |
 | ------ | ------------------------------------------------------------- |
-| 1      | **(this one)** project initialization                         |
-| 2      | Auth UI wiring on mobile + device enrollment                  |
-| 3      | GPS tracking + foreground service                             |
+| 1      | **(done)** project initialization                         |
+| 2      | **(done)** auth + device registration                     |
+| 3      | GPS tracking + foreground service                         |
 | 4      | Offline buffer + sync                                         |
 | 5      | SIM-change detection + SMS fallback                           |
 | 6      | Camera capture (evidence)                                     |
