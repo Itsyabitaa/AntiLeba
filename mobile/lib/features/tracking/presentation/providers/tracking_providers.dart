@@ -6,6 +6,7 @@ import 'package:anti_leba/core/network/dio_client.dart';
 import 'package:anti_leba/core/storage/hive_bootstrap.dart';
 import 'package:anti_leba/features/auth/domain/auth_session.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
+import 'package:anti_leba/features/photos/presentation/providers/photo_providers.dart';
 import 'package:anti_leba/features/sim/presentation/providers/sim_providers.dart';
 import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/sync/data/location_sync_engine.dart';
@@ -116,6 +117,7 @@ class TrackingController extends StateNotifier<TrackingState> {
           deviceId: deviceId,
           device: device,
         );
+    await _ref.read(photoControllerProvider.notifier).start(deviceId);
 
     _syncEngine.start(onResult: _onSyncResult);
 
@@ -150,6 +152,7 @@ class TrackingController extends StateNotifier<TrackingState> {
     }
     await _tracking.stop();
     await _syncEngine.stop();
+    await _ref.read(photoControllerProvider.notifier).stop();
     await _ref.read(simControllerProvider.notifier).stop();
     await _ref.read(smsControllerProvider.notifier).stop();
     state = const TrackingState();

@@ -24,6 +24,7 @@ coverage/
 backend/prisma/migrations/dev.db
 backend/prisma/*.db
 backend/prisma/*.db-journal
+backend/uploads/
 
 # ──────── Flutter / Dart ────────
 mobile/.dart_tool/

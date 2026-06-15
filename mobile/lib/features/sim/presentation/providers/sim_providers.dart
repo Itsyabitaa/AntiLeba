@@ -9,6 +9,8 @@ import 'package:anti_leba/features/sim/data/datasources/sim_remote_datasource.da
 import 'package:anti_leba/features/sim/data/repositories/sim_repository_impl.dart';
 import 'package:anti_leba/features/sim/data/sim_monitor_engine.dart';
 import 'package:anti_leba/features/sim/domain/sim_repository.dart';
+import 'package:anti_leba/features/photos/domain/photo_trigger.dart';
+import 'package:anti_leba/features/photos/presentation/providers/photo_providers.dart';
 import 'package:anti_leba/features/sms/data/services/battery_status_service.dart';
 import 'package:anti_leba/features/sms/data/services/sim_status_service.dart';
 import 'package:anti_leba/features/sms/data/services/sms_message_formatter.dart';
@@ -165,6 +167,14 @@ class SimController extends StateNotifier<SimState> {
       } catch (error) {
         state = state.copyWith(error: error.toString());
       }
+
+      unawaited(
+        _ref.read(photoControllerProvider.notifier).captureOnTrigger(
+              deviceId: event.deviceId,
+              trigger: PhotoTrigger.simReplacement,
+              clientEventId: 'photo-${event.clientEventId}',
+            ),
+      );
     } finally {
       _responding = false;
     }

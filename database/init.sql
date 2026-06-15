@@ -112,6 +112,37 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_sim_changes_device_client_event
 CREATE INDEX IF NOT EXISTS idx_sim_changes_device_detected
     ON sim_changes (device_id, detected_at);
 
+-- photos (Sprint 8) --------------------------------------------------------
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'PhotoTrigger') THEN
+        CREATE TYPE "PhotoTrigger" AS ENUM (
+            'SIM_REPLACEMENT',
+            'REMOTE_COMMAND',
+            'UNLOCK_FAILURE',
+            'MANUAL'
+        );
+    END IF;
+END$$;
+
+CREATE TABLE IF NOT EXISTS photos (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    device_id         UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    client_event_id   VARCHAR(36),
+    trigger           "PhotoTrigger" NOT NULL,
+    storage_path      VARCHAR(500) NOT NULL,
+    mime_type         VARCHAR(64) NOT NULL,
+    file_size         INTEGER NOT NULL,
+    captured_at       TIMESTAMPTZ NOT NULL,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_photos_device_client_event
+    ON photos (device_id, client_event_id);
+
+CREATE INDEX IF NOT EXISTS idx_photos_device_captured
+    ON photos (device_id, captured_at);
+
 -- updated_at trigger -------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$

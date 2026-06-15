@@ -1,6 +1,7 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:anti_leba/features/sms/data/datasources/sms_local_datasource.dart';
+import 'package:anti_leba/features/photos/data/datasources/photo_local_datasource.dart';
 import 'package:anti_leba/features/tracking/data/datasources/location_local_datasource.dart';
 
 class HiveBootstrap {
@@ -15,6 +16,7 @@ class HiveBootstrap {
     await Hive.openBox<dynamic>(LocationLocalDataSource.boxName);
     await Hive.openBox<dynamic>(SmsLocalDataSource.pendingBoxName);
     await Hive.openBox<dynamic>(SmsLocalDataSource.sentBoxName);
+    await Hive.openBox<dynamic>(PhotoLocalDataSource.boxName);
     _ready = true;
   }
 
@@ -31,5 +33,10 @@ class HiveBootstrap {
   static Future<Box<dynamic>> sentSmsBox() async {
     await ensureInitialized();
     return Hive.box<dynamic>(SmsLocalDataSource.sentBoxName);
+  }
+
+  static Future<Box<dynamic>> pendingPhotosBox() async {
+    await ensureInitialized();
+    return Hive.box<dynamic>(PhotoLocalDataSource.boxName);
   }
 }

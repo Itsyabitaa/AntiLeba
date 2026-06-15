@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:anti_leba/core/router/app_router.dart';
 import 'package:anti_leba/features/auth/presentation/providers/auth_providers.dart';
 import 'package:anti_leba/features/devices/domain/device.dart';
+import 'package:anti_leba/features/photos/presentation/providers/photo_providers.dart';
 import 'package:anti_leba/features/sim/presentation/providers/sim_providers.dart';
 import 'package:anti_leba/features/sms/presentation/providers/sms_providers.dart';
 import 'package:anti_leba/features/tracking/presentation/providers/tracking_providers.dart';
@@ -27,6 +28,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final tracking = ref.watch(trackingControllerProvider);
     final sms = ref.watch(smsControllerProvider);
     final sim = ref.watch(simControllerProvider);
+    final photos = ref.watch(photoControllerProvider);
 
     ref.listen<AsyncValue<Device?>>(enrolledDeviceProvider, (previous, next) {
       next.whenData((Device? device) async {
@@ -171,6 +173,45 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ],
           const SizedBox(height: 12),
           _StatusCard(
+            title: 'Evidence capture',
+            subtitle: _photoSubtitle(photos),
+            icon: photos.isCapturing ? Icons.camera : Icons.camera_alt_outlined,
+            trailing: photos.isCapturing
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      TextButton(
+                        onPressed: tracking.isRunning
+                            ? () => ref
+                                .read(photoControllerProvider.notifier)
+                                .captureManual()
+                            : null,
+                        child: const Text('Capture'),
+                      ),
+                      if (photos.pendingCount > 0)
+                        TextButton(
+                          onPressed: () => ref
+                              .read(photoControllerProvider.notifier)
+                              .retryUploads(),
+                          child: const Text('Upload'),
+                        ),
+                    ],
+                  ),
+          ),
+          if (photos.error != null) ...<Widget>[
+            const SizedBox(height: 8),
+            Text(
+              photos.error!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          const SizedBox(height: 12),
+          _StatusCard(
             title: 'Offline buffer',
             subtitle: tracking.isSyncing
                 ? 'Syncing ${tracking.unsyncedCount} location(s)…'
@@ -235,6 +276,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       parts.add('THEFT MODE');
     } else {
       parts.add('monitoring active');
+    }
+    return parts.join(' · ');
+  }
+
+  String _photoSubtitle(PhotoState photos) {
+    if (!photos.isRunning) return 'Idle until tracking starts';
+    if (photos.isCapturing) return 'Capturing front camera…';
+    final parts = <String>['${photos.pendingCount} pending upload'];
+    if (photos.lastCapturedAt != null) {
+      parts.add(
+        'last capture ${DateFormat.Hm().format(photos.lastCapturedAt!.toLocal())}',
+      );
+    }
+    if (photos.lastUploadedAt != null) {
+      parts.add(
+        'last upload ${DateFormat.Hm().format(photos.lastUploadedAt!.toLocal())}',
+      );
     }
     return parts.join(' · ');
   }
