@@ -39,15 +39,15 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
 CREATE TABLE IF NOT EXISTS devices (
     id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    device_uid       VARCHAR(190) UNIQUE NOT NULL, -- Android ID / hardware fingerprint
-    label            VARCHAR(120) NOT NULL,        -- "My Pixel 8"
+    device_uid       VARCHAR(190) UNIQUE NOT NULL,
+    label            VARCHAR(120) NOT NULL,
     manufacturer     VARCHAR(80),
     model            VARCHAR(80),
     os_version       VARCHAR(40),
     app_version      VARCHAR(20),
-    sim_serial       VARCHAR(40),                  -- ICCID (last known)
+    sim_serial       VARCHAR(40),
     sim_operator     VARCHAR(60),
-    push_token       VARCHAR(255),                 -- FCM token
+    push_token       VARCHAR(255),
     status           device_status NOT NULL DEFAULT 'ACTIVE',
     last_seen_at     TIMESTAMPTZ,
     enrolled_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -58,6 +58,19 @@ CREATE TABLE IF NOT EXISTS devices (
 CREATE INDEX IF NOT EXISTS idx_devices_user_id     ON devices (user_id);
 CREATE INDEX IF NOT EXISTS idx_devices_status      ON devices (status);
 CREATE INDEX IF NOT EXISTS idx_devices_last_seen   ON devices (last_seen_at);
+
+-- sessions -----------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS sessions (
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_id   UUID REFERENCES devices(id) ON DELETE SET NULL,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    revoked_at  TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id    ON sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions (expires_at);
 
 -- updated_at trigger -------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_updated_at()
