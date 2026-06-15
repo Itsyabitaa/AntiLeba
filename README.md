@@ -163,6 +163,6 @@ with `@Public()`.
 | 2      | **(done)** auth + device registration                     |
 | 3      | **(done)** GPS tracking + foreground service + offline buffer |
 | 4      | **(done)** Hive offline queue + sync engine + batch dedup     |
-| 5      | SIM-change detection + SMS fallback                           |
+| 5      | **(done)** SMS fallback + SIM watch + emergency alert module    |
 | 6      | Camera capture (evidence)                                     |
 | 7+     | Remote commands, alerts, admin dashboard, hardening           |
