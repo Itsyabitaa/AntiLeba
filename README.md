@@ -162,7 +162,7 @@ with `@Public()`.
 | 1      | **(done)** project initialization                         |
 | 2      | **(done)** auth + device registration                     |
 | 3      | **(done)** GPS tracking + foreground service + offline buffer |
-| 4      | Offline buffer + sync (extended)                              |
+| 4      | **(done)** Hive offline queue + sync engine + batch dedup     |
 | 5      | SIM-change detection + SMS fallback                           |
 | 6      | Camera capture (evidence)                                     |
 | 7+     | Remote commands, alerts, admin dashboard, hardening           |
